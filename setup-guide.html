@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마켓레이더 세팅 가이드</title>
+<style>
+:root {
+  --bg: #080C14; --bg2: #0D1220; --border: rgba(255,255,255,0.08);
+  --up: #10D98A; --accent: #3B7BF6; --gold: #F5A623; --down: #FF4D6D;
+  --text1: #EFF3FA; --text2: #94A3B8; --text3: #4B5875;
+  --mono: 'DM Mono', monospace; --sans: 'Noto Sans KR', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text1);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:720px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:24px;font-weight:900;margin-bottom:6px}
+.sub{font-size:14px;color:var(--text2);margin-bottom:36px}
+
+/* 진행도 바 */
+.progress{display:flex;gap:0;margin-bottom:36px;border-radius:8px;overflow:hidden}
+.prog-step{flex:1;height:6px}
+
+/* 단계 카드 */
+.step{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px}
+.step-head{display:flex;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;user-select:none;transition:background .2s}
+.step-head:hover{background:rgba(255,255,255,.03)}
+.step-num{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex-shrink:0}
+.step-info{flex:1}
+.step-title{font-size:16px;font-weight:700}
+.step-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.step-arrow{font-size:16px;color:var(--text3);transition:transform .3s}
+.step.open .step-arrow{transform:rotate(180deg)}
+.step-body{display:none;border-top:1px solid var(--border);padding:20px}
+.step.open .step-body{display:block}
+
+/* 체크리스트 */
+.checklist{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background .2s}
+.check-item:hover{background:rgba(255,255,255,.05)}
+.check-item.done{border-color:rgba(16,217,138,.3);background:rgba(16,217,138,.05)}
+.check-box{width:20px;height:20px;border-radius:5px;border:2px solid var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;font-size:12px}
+.check-item.done .check-box{border-color:var(--up);background:var(--up);color:#000}
+.check-label{font-size:13.5px;color:var(--text2);flex:1}
+.check-item.done .check-label{color:var(--text1)}
+.check-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* 코드 블록 */
+.code{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12px;color:#7DD3FC;overflow-x:auto;white-space:pre;margin:12px 0;line-height:1.7}
+.code .comment{color:var(--text3)}
+.code .str{color:#86EFAC}
+.code .key{color:#F5A623}
+
+/* 안내 박스 */
+.tip{border-radius:10px;padding:12px 14px;margin:12px 0;font-size:13px;line-height:1.6}
+.tip.info{background:rgba(59,123,246,.08);border:1px solid rgba(59,123,246,.2);color:var(--text2)}
+.tip.warn{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);color:#F5A623}
+.tip.good{background:rgba(16,217,138,.08);border:1px solid rgba(16,217,138,.2);color:var(--up)}
+.tip b{color:var(--text1)}
+
+/* 이미지 대체 박스 */
+.img-box{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;font-size:13px;color:var(--text3);margin:12px 0}
+.img-box .big{font-size:32px;margin-bottom:8px}
+
+/* 파일 트리 */
+.tree{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:2;margin:12px 0}
+.tree .dir{color:#F5A623}.tree .file{color:#86EFAC}.tree .arrow{color:var(--text3)}
+
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-acc{background:var(--accent);color:#fff}
+.btn-acc:hover{background:#5B9BFF;text-decoration:none}
+.btn-out{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-out:hover{border-color:var(--border2,rgba(255,255,255,.15));color:var(--text1);text-decoration:none}
+
+/* 완료 배너 */
+.done-banner{background:linear-gradient(135deg,rgba(16,217,138,.12),rgba(59,123,246,.08));border:1px solid rgba(16,217,138,.25);border-radius:14px;padding:22px;text-align:center;margin-top:28px}
+.done-banner .icon{font-size:40px;margin-bottom:10px}
+.done-banner h2{font-size:20px;font-weight:900;margin-bottom:6px;color:var(--up)}
+.done-banner p{font-size:13px;color:var(--text2);line-height:1.7}
+
+/* 반응형 */
+@media(max-width:480px){.wrap{padding:20px 14px 80px}.step-title{font-size:14px}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+  <h1>📡 마켓레이더 세팅 가이드</h1>
+  <p class="sub">완전 처음이어도 괜찮아요. 순서대로 클릭하면서 따라오세요 — 무료, 코딩 거의 없음.</p>
+
+  <!-- 진행도 -->
+  <div class="progress" id="progressBar"></div>
+
+  <!-- ───── STEP 1 ───── -->
+  <div class="step open" id="step1">
+    <div class="step-head" onclick="toggleStep('step1')">
+      <div class="step-num" style="background:rgba(59,123,246,.2);color:var(--accent)">1</div>
+      <div class="step-info">
+        <div class="step-title">GitHub 계정 만들기</div>
+        <div class="step-desc">코드와 대시보드를 올릴 공간 — 무료</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><a href="https://github.com" target="_blank">github.com</a> 접속 → <b>Sign up</b> 클릭</div>
+            <div class="check-sub">이메일·비밀번호·아이디 설정. 아이디는 나중에 주소가 됩니다 (예: marketradar-홍길동)</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">이메일 인증 완료 (받은 편지함 확인)</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">로그인 후 오른쪽 위 <b>+ → New repository</b> 클릭</div>
+            <div class="check-sub">저장소 = 내 코드/파일을 담는 폴더</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소 이름 입력: <code style="background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;font-size:12px">market-radar</code></div>
+            <div class="check-sub">Public 선택 (GitHub Pages 무료 사용 조건) → <b>Create repository</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="tip good">✅ 완료하면 <b>https://github.com/내아이디/market-radar</b> 주소가 생깁니다</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 2 ───── -->
+  <div class="step" id="step2">
+    <div class="step-head" onclick="toggleStep('step2')">
+      <div class="step-num" style="background:rgba(245,166,35,.15);color:var(--gold)">2</div>
+      <div class="step-info">
+        <div class="step-title">파일 4개 업로드하기</div>
+        <div class="step-desc">대시보드 코드를 GitHub에 올립니다</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+        Claude가 만들어준 파일 4개를 아래 구조로 올려야 합니다. 파일 이름과 폴더 위치가 정확해야 해요.
+      </p>
+      <div class="tree">
+<span class="dir">market-radar/</span>  <span class="comment">← 저장소 루트</span>
+├── <span class="file">index.html</span>              <span class="comment">← 대시보드 메인 화면</span>
+├── <span class="dir">.github/</span>
+│   └── <span class="dir">workflows/</span>
+│       └── <span class="file">fetch_market.yml</span>   <span class="comment">← 자동 실행 설정</span>
+├── <span class="dir">scripts/</span>
+│   └── <span class="file">fetch_market.py</span>    <span class="comment">← 데이터 수집 코드</span>
+└── <span class="dir">data/</span>                   <span class="comment">← 자동 생성됨 (비워두기)</span></div>
+
+      <div class="tip warn">⚠️ <b>.github 폴더 이름 앞에 점(.)이 있어요.</b> 정확히 입력해야 합니다.</div>
+
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소 페이지에서 <b>Add file → Upload files</b> 클릭</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>index.html</b> 드래그 앤 드롭 → Commit changes</div>
+            <div class="check-sub">Claude가 만들어준 index.html 파일</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>.github/workflows/fetch_market.yml</b> 업로드</div>
+            <div class="check-sub">폴더명까지 포함해서 경로가 맞아야 해요. GitHub 파일 추가 시 경로 직접 입력 가능.</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>scripts/fetch_market.py</b> 업로드</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>data/</b> 폴더 생성 — 빈 파일 <code style="font-size:11px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px">.gitkeep</code> 하나 넣기</div>
+            <div class="check-sub">빈 폴더는 GitHub에 올라가지 않으므로 빈 파일 하나 넣어야 합니다</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip info">💡 <b>팁:</b> 파일 위치가 헷갈리면 GitHub 파일 추가 화면에서 파일 이름 입력창에 <code style="font-size:12px">scripts/fetch_market.py</code> 처럼 경로 포함해서 입력하면 자동으로 폴더가 만들어집니다.</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 3 ───── -->
+  <div class="step" id="step3">
+    <div class="step-head" onclick="toggleStep('step3')">
+      <div class="step-num" style="background:rgba(16,217,138,.15);color:var(--up)">3</div>
+      <div class="step-info">
+        <div class="step-title">GitHub Pages 켜기</div>
+        <div class="step-desc">내 대시보드에 인터넷 주소 부여</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소 상단 <b>Settings</b> 탭 클릭</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">왼쪽 사이드바 <b>Pages</b> 클릭</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">Source: <b>Deploy from a branch</b> 선택 → Branch: <b>main</b>, 폴더: <b>/ (root)</b> → Save</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">1~2분 후 페이지 새로고침 → 주소 확인</div>
+            <div class="check-sub">https://내아이디.github.io/market-radar 형태로 나타납니다</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip good">🎉 이제 이 URL을 폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요!</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 4 ───── -->
+  <div class="step" id="step4">
+    <div class="step-head" onclick="toggleStep('step4')">
+      <div class="step-num" style="background:rgba(155,110,255,.15);color:#9B6EFF">4</div>
+      <div class="step-info">
+        <div class="step-title">KIS API 신청하기</div>
+        <div class="step-desc">한국투자증권 — 무료, 5분이면 발급</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><a href="https://apiportal.koreainvestment.com" target="_blank">apiportal.koreainvestment.com</a> 접속</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">한국투자증권 아이디로 로그인</div>
+            <div class="check-sub">HTS/MTS 아이디와 동일합니다</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>API신청</b> → 계좌번호 선택 → 신청 완료</div>
+            <div class="check-sub">심사 없이 즉시 발급됩니다</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>내 앱 → App Key / App Secret</b> 복사해두기</div>
+            <div class="check-sub">다음 단계에서 입력합니다. 절대 공개하지 마세요!</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip warn">⚠️ App Key·Secret은 <b>절대 index.html이나 코드에 직접 입력하지 마세요.</b> 다음 단계에서 GitHub Secrets에 안전하게 저장합니다.</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 5 ───── -->
+  <div class="step" id="step5">
+    <div class="step-head" onclick="toggleStep('step5')">
+      <div class="step-num" style="background:rgba(255,77,109,.15);color:var(--down)">5</div>
+      <div class="step-info">
+        <div class="step-title">API 키를 GitHub에 안전하게 저장</div>
+        <div class="step-desc">GitHub Secrets — 암호화 보관, 코드에 노출 안 됨</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
+        API 키를 코드에 직접 쓰면 공개저장소에 노출됩니다. GitHub Secrets에 저장하면 Actions에서만 쓸 수 있고 외부에는 절대 보이지 않아요.
+      </p>
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소 <b>Settings → Secrets and variables → Actions</b></div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>New repository secret</b> 클릭 → 이름: <code style="font-size:11px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px">KIS_APP_KEY</code> → 값: App Key 붙여넣기</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">같은 방법으로 <code style="font-size:11px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px">KIS_APP_SECRET</code> → App Secret 입력</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><code style="font-size:11px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px">KIS_ACCOUNT_NO</code> → 계좌번호 입력</div>
+            <div class="check-sub">형식: 12345678-01 (HTS에서 확인 가능)</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip good">✅ 3개 Secret 등록 완료: KIS_APP_KEY / KIS_APP_SECRET / KIS_ACCOUNT_NO</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 6 ───── -->
+  <div class="step" id="step6">
+    <div class="step-head" onclick="toggleStep('step6')">
+      <div class="step-num" style="background:rgba(16,217,138,.15);color:var(--up)">6</div>
+      <div class="step-info">
+        <div class="step-title">Actions 권한 허용 & 첫 실행</div>
+        <div class="step-desc">자동화 설정 마지막 단계</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소 <b>Settings → Actions → General</b></div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">Workflow permissions → <b>Read and write permissions</b> 선택 → Save</div>
+            <div class="check-sub">Actions가 data/ 폴더에 JSON을 저장(커밋)할 수 있어야 합니다</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">상단 <b>Actions</b> 탭 → 왼쪽 <b>📈 시장 데이터 수집</b> 클릭</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label"><b>Run workflow → Run workflow</b> 클릭 (수동 첫 실행)</div>
+            <div class="check-sub">초록 체크 뜨면 성공! 주황 점은 실행 중, 빨간 X는 에러 (로그 확인 필요)</div>
+          </div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">저장소에 <b>data/market.json</b> 파일이 생성됐는지 확인</div>
+            <div class="check-sub">이 파일이 대시보드의 실시간 데이터 소스입니다</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip info">ℹ️ 이후로는 <b>평일 장중 5분마다, 장마감 후</b> 자동으로 실행됩니다. 손댈 필요 없어요.</div>
+    </div>
+  </div>
+
+  <!-- ───── STEP 7 ───── -->
+  <div class="step" id="step7">
+    <div class="step-head" onclick="toggleStep('step7')">
+      <div class="step-num" style="background:rgba(59,123,246,.2);color:var(--accent)">7</div>
+      <div class="step-info">
+        <div class="step-title">폰 홈 화면에 추가하기</div>
+        <div class="step-desc">앱처럼 바로 접속</div>
+      </div>
+      <span class="step-arrow">▾</span>
+    </div>
+    <div class="step-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">대시보드 URL을 폰 홈 화면에 추가하면 앱처럼 풀스크린으로 실행됩니다.</p>
+
+      <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">iPhone (Safari)</p>
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div class="check-label">Safari에서 대시보드 URL 열기</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">하단 공유 버튼(□↑) → <b>홈 화면에 추가</b></div>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;margin-top:16px;letter-spacing:.5px;text-transform:uppercase">안드로이드 (Chrome)</p>
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div class="check-label">Chrome에서 URL 열기</div>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <div>
+            <div class="check-label">오른쪽 위 점 3개(⋮) → <b>홈 화면에 추가</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip good">🎉 이제 홈 화면에서 탭 한 번으로 시황을 볼 수 있어요!</div>
+    </div>
+  </div>
+
+  <!-- 완료 배너 -->
+  <div class="done-banner" id="doneBanner" style="display:none">
+    <div class="icon">🚀</div>
+    <h2>모든 세팅 완료!</h2>
+    <p>이제 <b>평일 장중에는 5분마다</b> 데이터가 갱신되고<br>장마감 후에는 Phase 신호까지 계산됩니다.<br><br>
+    대시보드 URL을 폰 홈 화면에 추가해두면<br>언제든 한 번에 시황을 확인할 수 있어요.</p>
+  </div>
+
+  <!-- FAQ -->
+  <div style="margin-top:36px">
+    <h2 style="font-size:18px;font-weight:900;margin-bottom:16px">자주 묻는 질문</h2>
+
+    <div class="step" id="faq1">
+      <div class="step-head" onclick="toggleStep('faq1')">
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--text2)">Q. Actions가 빨간 X로 실패했어요</div>
+        <span class="step-arrow">▾</span>
+      </div>
+      <div class="step-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px">실패한 Actions 클릭 → 로그에서 에러 메시지 확인. 주요 원인:</p>
+        <div class="tip warn">• <b>Secret 이름 오타</b> — KIS_APP_KEY, KIS_APP_SECRET, KIS_ACCOUNT_NO 정확히 확인<br>• <b>API 키 만료</b> — KIS 포털에서 재발급<br>• <b>계좌번호 형식</b> — 12345678-01 형태인지 확인</div>
+      </div>
+    </div>
+
+    <div class="step" id="faq2">
+      <div class="step-head" onclick="toggleStep('faq2')">
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--text2)">Q. 관심 종목을 추가/변경하고 싶어요</div>
+        <span class="step-arrow">▾</span>
+      </div>
+      <div class="step-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px"><b>scripts/fetch_market.py</b> 파일 → <b>WATCH_LIST</b> 부분에 종목 코드 추가/수정:</p>
+        <div class="code">WATCH_LIST = [
+    <span class="str">"005930"</span>,  <span class="comment"># 삼성전자</span>
+    <span class="str">"000660"</span>,  <span class="comment"># SK하이닉스</span>
+    <span class="str">"여기에 종목코드"</span>,  <span class="comment"># 추가할 종목</span>
+]</div>
+        <div class="tip info">종목 코드는 네이버 금융에서 종목 검색 후 URL에서 확인 (예: finance.naver.com/item/main.naver?code=<b>005930</b>)</div>
+      </div>
+    </div>
+
+    <div class="step" id="faq3">
+      <div class="step-head" onclick="toggleStep('faq3')">
+        <div style="flex:1;font-size:14px;font-weight:600;color:var(--text2)">Q. 갱신 주기를 바꾸고 싶어요</div>
+        <span class="step-arrow">▾</span>
+      </div>
+      <div class="step-body">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:10px"><b>.github/workflows/fetch_market.yml</b>의 cron 부분 수정. 단, GitHub Actions 무료 한도(월 2,000분)를 확인하세요.</p>
+        <div class="tip warn">5분 간격: 월 약 650분 사용 (한도 내)<br>1분 간격: 월 약 3,200분 → 무료 한도 초과 ⚠️</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- wrap -->
+
+<script>
+// 단계 토글
+function toggleStep(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+// 체크 토글
+function toggleCheck(el){
+  el.classList.toggle('done');
+  el.querySelector('.check-box').textContent=el.classList.contains('done')?'✓':'';
+  updateProgress();
+}
+
+// 진행도 업데이트
+function updateProgress(){
+  const total=document.querySelectorAll('.check-item').length;
+  const done=document.querySelectorAll('.check-item.done').length;
+  const pct=total>0?done/total*100:0;
+  const bar=document.getElementById('progressBar');
+  bar.innerHTML=`
+    <div style="height:6px;background:linear-gradient(90deg,#3B7BF6,#10D98A);width:${pct}%;border-radius:99px;transition:width .5s"></div>
+    <div style="height:6px;flex:1;background:rgba(255,255,255,.05)"></div>
+  `;
+  bar.style.cssText='display:flex;gap:0;margin-bottom:36px;border-radius:99px;overflow:hidden;background:transparent';
+  bar.innerHTML=`<div style="height:6px;background:linear-gradient(90deg,#3B7BF6,#10D98A);width:${pct}%;border-radius:99px;min-width:${pct>0?6:0}px;transition:width .5s ease"></div>
+  <div style="height:6px;flex:1;background:rgba(255,255,255,.05);border-radius:99px"></div>`;
+
+  if(pct>=100){
+    document.getElementById('doneBanner').style.display='block';
+  }
+}
+
+// 초기화
+updateProgress();
+</script>
+</body>
+</html>
