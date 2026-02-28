@@ -1,1 +1,50 @@
+name: 📈 시장 데이터 수집
+
+on:
+  schedule:
+    # 장중: 평일 09:05 ~ 15:35 (KST = UTC+9, 5분 간격)
+    - cron: '5,10,15,20,25,30,35,40,45,50,55 0 * * 1-5'   # 09:05~09:55
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 1 * * 1-5'  # 10:00~10:55
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 2 * * 1-5'  # 11:00~11:55
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 3 * * 1-5'  # 12:00~12:55
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 4 * * 1-5'  # 13:00~13:55
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 5 * * 1-5'  # 14:00~14:55
+    - cron: '0,5,10,15,20,25,30,35 6 * * 1-5'              # 15:00~15:35
+    # 장마감 후 Phase 신호 계산 (15:40 KST)
+    - cron: '40 6 * * 1-5'
+  workflow_dispatch: # 수동 실행 버튼
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # data/ 폴더에 JSON 커밋 권한
+
+    steps:
+      - name: 📥 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 세팅
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 패키지 설치
+        run: pip install requests pandas numpy
+
+      - name: 📡 데이터 수집 & 신호 계산
+        env:
+          KIS_APP_KEY:    ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
+        run: python scripts/fetch_market.py
+
+      - name: 💾 JSON 데이터 커밋
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "📊 시장 데이터 업데이트 $(date +'%Y-%m-%d %H:%M KST' -d '+9 hours')"
+          git push
 
