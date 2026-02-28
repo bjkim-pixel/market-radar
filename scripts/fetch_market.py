@@ -42,7 +42,7 @@ def get_token():
     cache = DATA_DIR / "token_cache.json"
     if cache.exists():
         c = json.loads(cache.read_text())
-        if datetime.datetime.now() < datetime.datetime.fromisoformat(c["exp"]) - datetime.timedelta(minutes=10):
+        if "exp" in c and datetime.datetime.now() < datetime.datetime.fromisoformat(c["exp"]) - datetime.timedelta(minutes=10):
             return c["token"]
     r = requests.post(f"{BASE_URL}/oauth2/tokenP",
         json={"grant_type": "client_credentials", "appkey": APP_KEY, "appsecret": APP_SECRET},
