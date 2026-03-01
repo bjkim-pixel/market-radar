@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-03-01 15:11",
+  "updated_at": "2026-03-01 16:58",
   "date": "2026-03-01",
-  "is_market_open": true,
+  "is_market_open": false,
   "indices": [
     {
       "name": "KOSPI",
