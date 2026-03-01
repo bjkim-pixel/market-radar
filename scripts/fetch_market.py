@@ -4,11 +4,11 @@
 fetch_market.py v6 — KIS API 스펙 완전 정확 버전
 =================================================
 확인된 API 스펙:
-  지수:     FHPUP02100000  FID_COND_MRKT_DIV_CODE="U"  FID_INPUT_ISCD=0001/1001/2001
-  현재가:   FHKST01010100  FID_COND_MRKT_DIV_CODE="J"  FID_INPUT_ISCD=종목코드
+  지수:     FHPUP02100000  fid_cond_mrkt_div_code="U"  FID_INPUT_ISCD=0001/1001/2001
+  현재가:   FHKST01010100  fid_cond_mrkt_div_code="J"  FID_INPUT_ISCD=종목코드
   일봉:     FHKST03010100  FID_PERIOD_DIV_CODE="D"  → output2 배열
-  투자자:   FHKST01010900  FID_COND_MRKT_DIV_CODE="J"  FID_INPUT_ISCD=종목코드
-  거래량순위: FHPST01710000  FID_COND_MRKT_DIV_CODE="J" (KOSPI만, KOSDAQ 안됨)
+  투자자:   FHKST01010900  fid_cond_mrkt_div_code="J"  FID_INPUT_ISCD=종목코드
+  거래량순위: FHPST01710000  fid_cond_mrkt_div_code="J" (KOSPI만, KOSDAQ 안됨)
 """
 import os, json, time, math, datetime
 import requests
@@ -108,7 +108,7 @@ def kis_get(path, params, tr_id, token):
     return data
 
 # ── 1. 지수 ── FHPUP02100000 ──────────────────────────────────────────
-# FID_COND_MRKT_DIV_CODE = "U" (업종/지수 전용, J 사용하면 에러!)
+# fid_cond_mrkt_div_code = "U" (업종/지수 전용, J 사용하면 에러!)
 # FID_INPUT_ISCD: 0001=KOSPI, 1001=KOSDAQ, 2001=KOSPI200
 def fetch_indices(token):
     INDEX_CODES = [("0001","KOSPI"), ("1001","KOSDAQ"), ("2001","KSP200")]
@@ -117,7 +117,7 @@ def fetch_indices(token):
         try:
             d = kis_get(
                 "/uapi/domestic-stock/v1/quotations/inquire-index-price",
-                {"FID_COND_MRKT_DIV_CODE": "U", "FID_INPUT_ISCD": iscd},
+                {"fid_cond_mrkt_div_code": "U", "FID_INPUT_ISCD": iscd},
                 "FHPUP02100000", token
             )
             o = d.get("output", {})
@@ -142,7 +142,7 @@ def fetch_indices(token):
     return results
 
 # ── 2. 거래량 순위 ── FHPST01710000 ────────────────────────────────────
-# KOSPI(J)만 지원. KOSDAQ(Q) → ERROR INVALID FID_COND_MRKT_DIV_CODE
+# KOSPI(J)만 지원. KOSDAQ(Q) → ERROR INVALID fid_cond_mrkt_div_code
 def fetch_top_volume_stocks(token, market="J", top_n=50):
     if market != "J":
         return _fetch_fallback(token, KOSDAQ_FALLBACK, "KOSDAQ")
@@ -151,7 +151,7 @@ def fetch_top_volume_stocks(token, market="J", top_n=50):
         d = kis_get(
             "/uapi/domestic-stock/v1/quotations/volume-rank",
             {
-                "FID_COND_MRKT_DIV_CODE": "J",
+                "fid_cond_mrkt_div_code": "J",
                 "FID_COND_SCR_DIV_CODE":  "20171",
                 "FID_INPUT_ISCD":         "0000",
                 "FID_DIV_CLS_CODE":       "0",
@@ -195,7 +195,7 @@ def _fetch_fallback(token, fallback_list, label):
         try:
             d = kis_get(
                 "/uapi/domestic-stock/v1/quotations/inquire-price",
-                {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": code},
+                {"fid_cond_mrkt_div_code": "J", "FID_INPUT_ISCD": code},
                 "FHKST01010100", token
             )
             o = d.get("output", {})
@@ -228,7 +228,7 @@ def fetch_ohlcv(code, token, days=60):
         d = kis_get(
             "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
             {
-                "FID_COND_MRKT_DIV_CODE": "J",
+                "fid_cond_mrkt_div_code": "J",
                 "FID_INPUT_ISCD":         code,
                 "FID_INPUT_DATE_1":       ndays_ago(days + 30),
                 "FID_INPUT_DATE_2":       today_str(),
@@ -251,12 +251,12 @@ def fetch_ohlcv(code, token, days=60):
         return pd.DataFrame()
 
 # ── 4. 투자자 ── FHKST01010900 ────────────────────────────────────────
-# output 배열 최근 30일, frgn_ntby_tr_pbmn=외인순매수대금(천원단위)
+# output 배열 최근 30일, frgn_ntby_tr_pbmn=외인순매수대금(백만원단위)
 def fetch_stock_supply(code, token):
     try:
         d = kis_get(
             "/uapi/domestic-stock/v1/quotations/inquire-investor",
-            {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": code},
+            {"fid_cond_mrkt_div_code": "J", "FID_INPUT_ISCD": code},
             "FHKST01010900", token
         )
         rows = d.get("output", [])
@@ -305,9 +305,9 @@ def calc_phase(ohlcv, supply):
         result["i_consec"] = calc_consec(supply, "orgn_qty")
         last = supply.iloc[-1]
         # frgn_amt는 천원 단위 → 원 단위 변환
-        result["foreign_today"] = int(safe_float(last.get("frgn_amt",0)) * 1000)
-        result["inst_today"]    = int(safe_float(last.get("orgn_amt",0)) * 1000)
-        result["indiv_today"]   = int(safe_float(last.get("prsn_amt",0)) * 1000)
+        result["foreign_today"] = int(safe_float(last.get("frgn_amt",0)) * 1_000_000)
+        result["inst_today"]    = int(safe_float(last.get("orgn_amt",0)) * 1_000_000)
+        result["indiv_today"]   = int(safe_float(last.get("prsn_amt",0)) * 1_000_000)
         smp5 = (supply.tail(5)["frgn_amt"].sum() + supply.tail(5)["orgn_amt"].sum())
         tr5  = df.tail(5)["tr_val"].sum() / 1000 or 1
         result["smp"] = round(smp5 / tr5 * 100, 2)
@@ -333,9 +333,9 @@ def calc_supply_summary(supply):
     def sums(n):
         t = supply.tail(n)
         return {
-            "foreign": int(t["frgn_amt"].sum() * 1000),
-            "inst":    int(t["orgn_amt"].sum() * 1000),
-            "indiv":   int(t["prsn_amt"].sum() * 1000),
+            "foreign": int(t["frgn_amt"].sum() * 1_000_000),
+            "inst":    int(t["orgn_amt"].sum() * 1_000_000),
+            "indiv":   int(t["prsn_amt"].sum() * 1_000_000),
         }
     return {"day":sums(1), "week":sums(5), "month":sums(22)}
 
