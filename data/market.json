@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-02-28 23:41",
-  "date": "2026-02-28",
-  "is_market_open": false,
+  "updated_at": "2026-03-01 14:43",
+  "date": "2026-03-01",
+  "is_market_open": true,
   "indices": [],
   "market_supply": {
     "foreign_net": 0,
@@ -187,91 +187,135 @@
       "indiv_today": 0
     },
     {
-      "code": "373220",
-      "name": "LG에너지솔루션",
+      "code": "000270",
+      "name": "기아",
       "market": "KOSPI",
-      "price": 427000,
-      "change": 0.0,
-      "diff": 0,
-      "volume": 591387,
-      "tr_val": 252281092500,
-      "high52": 527000,
-      "low52": 266000,
-      "mktcap": 999180,
-      "sector": "전기·전자",
-      "phase": "🟢 P2 수급가속",
-      "phase_key": "p2",
+      "price": 205500,
+      "change": -0.24,
+      "diff": -500,
+      "volume": 2945241,
+      "tr_val": 601959886300,
+      "high52": 212500,
+      "low52": 81300,
+      "mktcap": 802299,
+      "sector": "운송장비·부품",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
       "smp": 0.0,
-      "muges_ratio": 0.99,
-      "vol_ratio": 1.3,
-      "f_consec": 7,
-      "i_consec": 1,
+      "muges_ratio": 1.0,
+      "vol_ratio": 1.77,
+      "f_consec": 0,
+      "i_consec": 4,
       "obv_above_ma": true,
       "nh_flag": "",
-      "nh_ratio": 81.0,
+      "nh_ratio": 96.7,
       "supply_periods": {
         "day": {
-          "foreign": 17124,
-          "inst": 6424,
+          "foreign": -135207,
+          "inst": 56023,
           "indiv": 0
         },
         "week": {
-          "foreign": 126298,
-          "inst": 33916,
+          "foreign": -75699,
+          "inst": 136785,
           "indiv": 0
         },
         "month": {
-          "foreign": 87987,
-          "inst": 65536,
+          "foreign": 96414,
+          "inst": 251507,
           "indiv": 0
         }
       },
-      "foreign_today": 17124,
-      "inst_today": 6424,
+      "foreign_today": -135207,
+      "inst_today": 56023,
       "indiv_today": 0
     },
     {
-      "code": "035420",
-      "name": "NAVER",
+      "code": "086520",
+      "name": "에코프로",
       "market": "KOSPI",
-      "price": 254500,
-      "change": -2.3,
-      "diff": -6000,
-      "volume": 1259511,
-      "tr_val": 323263324250,
-      "high52": 295000,
-      "low52": 176200,
-      "mktcap": 399190,
-      "sector": "IT 서비스",
-      "phase": "🔴 P3 손바뀜경고",
-      "phase_key": "p3",
-      "smp": -0.0,
-      "muges_ratio": 1.01,
-      "vol_ratio": 0.84,
-      "f_consec": 0,
-      "i_consec": 0,
-      "obv_above_ma": false,
-      "nh_flag": "",
-      "nh_ratio": 86.3,
+      "price": 185000,
+      "change": 0.43,
+      "diff": 800,
+      "volume": 2792329,
+      "tr_val": 513838105400,
+      "high52": 190000,
+      "low52": 37750,
+      "mktcap": 251186,
+      "sector": "금융",
+      "phase": "🔵 P1 수급복합",
+      "phase_key": "p1",
+      "smp": 0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.61,
+      "f_consec": 3,
+      "i_consec": 3,
+      "obv_above_ma": true,
+      "nh_flag": "📍신고가근접",
+      "nh_ratio": 97.4,
       "supply_periods": {
         "day": {
-          "foreign": -80254,
-          "inst": -14728,
+          "foreign": 2127,
+          "inst": 20014,
           "indiv": 0
         },
         "week": {
-          "foreign": -137841,
-          "inst": -49060,
+          "foreign": 82942,
+          "inst": 28221,
           "indiv": 0
         },
         "month": {
-          "foreign": -476922,
-          "inst": -290503,
+          "foreign": 76341,
+          "inst": 100473,
           "indiv": 0
         }
       },
-      "foreign_today": -80254,
-      "inst_today": -14728,
+      "foreign_today": 2127,
+      "inst_today": 20014,
+      "indiv_today": 0
+    },
+    {
+      "code": "009150",
+      "name": "삼성전기",
+      "market": "KOSPI",
+      "price": 448500,
+      "change": -3.86,
+      "diff": -18000,
+      "volume": 1072933,
+      "tr_val": 485728611984,
+      "high52": 474000,
+      "low52": 108800,
+      "mktcap": 335001,
+      "sector": "전기·전자",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": 0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.19,
+      "f_consec": 0,
+      "i_consec": 0,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 94.6,
+      "supply_periods": {
+        "day": {
+          "foreign": -59049,
+          "inst": -18609,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -102211,
+          "inst": -49896,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 139012,
+          "inst": -6049,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -59049,
+      "inst_today": -18609,
       "indiv_today": 0
     },
     {
@@ -319,47 +363,47 @@
       "indiv_today": 0
     },
     {
-      "code": "003670",
-      "name": "포스코퓨처엠",
+      "code": "105560",
+      "name": "KB금융",
       "market": "KOSPI",
-      "price": 247000,
-      "change": 0.0,
-      "diff": 0,
-      "volume": 485158,
-      "tr_val": 119443098750,
-      "high52": 260000,
-      "low52": 98500,
-      "mktcap": 219697,
-      "sector": "전기·전자",
-      "phase": "🔵 P1 OBV매집",
-      "phase_key": "p1",
-      "smp": 0.0,
-      "muges_ratio": 1.0,
-      "vol_ratio": 0.9,
-      "f_consec": 1,
-      "i_consec": 0,
-      "obv_above_ma": true,
+      "price": 159000,
+      "change": -3.81,
+      "diff": -6300,
+      "volume": 2686751,
+      "tr_val": 429393211150,
+      "high52": 172500,
+      "low52": 69300,
+      "mktcap": 592832,
+      "sector": "금융",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.6,
+      "f_consec": 0,
+      "i_consec": 13,
+      "obv_above_ma": false,
       "nh_flag": "",
-      "nh_ratio": 95.0,
+      "nh_ratio": 92.2,
       "supply_periods": {
         "day": {
-          "foreign": 12287,
-          "inst": -150,
+          "foreign": -58938,
+          "inst": 17480,
           "indiv": 0
         },
         "week": {
-          "foreign": 72524,
-          "inst": 24733,
+          "foreign": -169711,
+          "inst": 98050,
           "indiv": 0
         },
         "month": {
-          "foreign": 69760,
-          "inst": 55451,
+          "foreign": -535132,
+          "inst": 439851,
           "indiv": 0
         }
       },
-      "foreign_today": 12287,
-      "inst_today": -150,
+      "foreign_today": -58938,
+      "inst_today": 17480,
       "indiv_today": 0
     },
     {
@@ -409,7 +453,7 @@
     {
       "code": "178320",
       "name": "서진시스템",
-      "market": "KOSDAQ",
+      "market": "KOSPI",
       "price": 47550,
       "change": 21.61,
       "diff": 8450,
@@ -424,7 +468,7 @@
       "smp": 0.0,
       "muges_ratio": 0.94,
       "vol_ratio": 4.1,
-      "f_consec": 2,
+      "f_consec": 3,
       "i_consec": 2,
       "obv_above_ma": true,
       "nh_flag": "",
@@ -451,53 +495,317 @@
       "indiv_today": 0
     },
     {
-      "code": "226950",
-      "name": "올릭스",
-      "market": "KOSDAQ",
-      "price": 180000,
-      "change": 12.92,
-      "diff": 20600,
-      "volume": 802519,
-      "tr_val": 140870182850,
-      "high52": 185500,
-      "low52": 34500,
-      "mktcap": 36342,
-      "sector": "일반서비스",
-      "phase": "🟢 P2 거래량돌파",
-      "phase_key": "p2",
+      "code": "066570",
+      "name": "LG전자",
+      "market": "KOSPI",
+      "price": 145700,
+      "change": -0.68,
+      "diff": -1000,
+      "volume": 2611013,
+      "tr_val": 383679176250,
+      "high52": 151900,
+      "low52": 64100,
+      "mktcap": 237325,
+      "sector": "전기·전자",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
       "smp": 0.0,
-      "muges_ratio": 0.97,
-      "vol_ratio": 2.0,
-      "f_consec": 5,
-      "i_consec": 7,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.02,
+      "f_consec": 0,
+      "i_consec": 2,
       "obv_above_ma": true,
-      "nh_flag": "📍신고가근접",
-      "nh_ratio": 97.0,
+      "nh_flag": "",
+      "nh_ratio": 95.9,
       "supply_periods": {
         "day": {
-          "foreign": 29743,
-          "inst": 6131,
+          "foreign": -46498,
+          "inst": 23054,
           "indiv": 0
         },
         "week": {
-          "foreign": 106728,
-          "inst": 31394,
+          "foreign": 31605,
+          "inst": 158231,
           "indiv": 0
         },
         "month": {
-          "foreign": 102923,
-          "inst": 45346,
+          "foreign": 112739,
+          "inst": 227385,
           "indiv": 0
         }
       },
-      "foreign_today": 29743,
-      "inst_today": 6131,
+      "foreign_today": -46498,
+      "inst_today": 23054,
+      "indiv_today": 0
+    },
+    {
+      "code": "035420",
+      "name": "NAVER",
+      "market": "KOSPI",
+      "price": 254500,
+      "change": -2.3,
+      "diff": -6000,
+      "volume": 1259511,
+      "tr_val": 323263324250,
+      "high52": 295000,
+      "low52": 176200,
+      "mktcap": 399190,
+      "sector": "IT 서비스",
+      "phase": "🔴 P3 손바뀜경고",
+      "phase_key": "p3",
+      "smp": -0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 0.84,
+      "f_consec": 0,
+      "i_consec": 0,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 86.3,
+      "supply_periods": {
+        "day": {
+          "foreign": -80254,
+          "inst": -14728,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -137841,
+          "inst": -49060,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -476922,
+          "inst": -290503,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -80254,
+      "inst_today": -14728,
+      "indiv_today": 0
+    },
+    {
+      "code": "055550",
+      "name": "신한지주",
+      "market": "KOSPI",
+      "price": 96900,
+      "change": -3.0,
+      "diff": -3000,
+      "volume": 3007690,
+      "tr_val": 291833336118,
+      "high52": 107200,
+      "low52": 42500,
+      "mktcap": 459940,
+      "sector": "금융",
+      "phase": "",
+      "phase_key": "none",
+      "smp": 0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.59,
+      "f_consec": 2,
+      "i_consec": 0,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 90.4,
+      "supply_periods": {
+        "day": {
+          "foreign": 6018,
+          "inst": -16506,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 4252,
+          "inst": -10991,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -112255,
+          "inst": 178715,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 6018,
+      "inst_today": -16506,
+      "indiv_today": 0
+    },
+    {
+      "code": "086790",
+      "name": "하나금융지주",
+      "market": "KOSPI",
+      "price": 121800,
+      "change": -2.48,
+      "diff": -3100,
+      "volume": 2118851,
+      "tr_val": 257975406650,
+      "high52": 133700,
+      "low52": 51500,
+      "mktcap": 339001,
+      "sector": "금융",
+      "phase": "",
+      "phase_key": "none",
+      "smp": 0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 1.77,
+      "f_consec": 2,
+      "i_consec": 0,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 91.1,
+      "supply_periods": {
+        "day": {
+          "foreign": 5919,
+          "inst": -12181,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -32196,
+          "inst": 4506,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -157405,
+          "inst": 160677,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 5919,
+      "inst_today": -12181,
+      "indiv_today": 0
+    },
+    {
+      "code": "373220",
+      "name": "LG에너지솔루션",
+      "market": "KOSPI",
+      "price": 427000,
+      "change": 0.0,
+      "diff": 0,
+      "volume": 591387,
+      "tr_val": 252281092500,
+      "high52": 527000,
+      "low52": 266000,
+      "mktcap": 999180,
+      "sector": "전기·전자",
+      "phase": "🟢 P2 수급가속",
+      "phase_key": "p2",
+      "smp": 0.0,
+      "muges_ratio": 0.99,
+      "vol_ratio": 1.3,
+      "f_consec": 7,
+      "i_consec": 1,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 81.0,
+      "supply_periods": {
+        "day": {
+          "foreign": 17124,
+          "inst": 6424,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 126298,
+          "inst": 33916,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 87987,
+          "inst": 65536,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 17124,
+      "inst_today": 6424,
+      "indiv_today": 0
+    },
+    {
+      "code": "068270",
+      "name": "셀트리온",
+      "market": "KOSPI",
+      "price": 238500,
+      "change": -1.45,
+      "diff": -3500,
+      "volume": 833169,
+      "tr_val": 198543887000,
+      "high52": 251000,
+      "low52": 150400,
+      "mktcap": 551050,
+      "sector": "제약",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": 0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.99,
+      "f_consec": 2,
+      "i_consec": 0,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 95.0,
+      "supply_periods": {
+        "day": {
+          "foreign": 33000,
+          "inst": -13902,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 121846,
+          "inst": 4030,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 344780,
+          "inst": 233166,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 33000,
+      "inst_today": -13902,
+      "indiv_today": 0
+    },
+    {
+      "code": "196170",
+      "name": "알테오젠",
+      "market": "KOSPI",
+      "price": 407500,
+      "change": 1.12,
+      "diff": 4500,
+      "volume": 437970,
+      "tr_val": 176926110250,
+      "high52": 569000,
+      "low52": 315500,
+      "mktcap": 218036,
+      "sector": "일반서비스",
+      "phase": "",
+      "phase_key": "none",
+      "smp": 0.0,
+      "muges_ratio": 0.99,
+      "vol_ratio": 0.77,
+      "f_consec": 2,
+      "i_consec": 2,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 71.6,
+      "supply_periods": {
+        "day": {
+          "foreign": 25467,
+          "inst": 29656,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 78188,
+          "inst": 30237,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 53631,
+          "inst": 284749,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 25467,
+      "inst_today": 29656,
       "indiv_today": 0
     },
     {
       "code": "247540",
       "name": "에코프로비엠",
-      "market": "KOSDAQ",
+      "market": "KOSPI",
       "price": 221500,
       "change": 0.91,
       "diff": 2000,
@@ -539,47 +847,487 @@
       "indiv_today": 0
     },
     {
-      "code": "091990",
-      "name": "셀트리온헬스케어",
+      "code": "017670",
+      "name": "SK텔레콤",
       "market": "KOSPI",
-      "price": 0,
-      "change": 0.0,
-      "diff": 0,
-      "volume": 0,
-      "tr_val": 0,
-      "high52": 0,
-      "low52": 0,
-      "mktcap": 0,
-      "sector": " ",
-      "phase": "",
-      "phase_key": "none",
-      "smp": 0.0,
-      "muges_ratio": NaN,
-      "vol_ratio": 1.0,
+      "price": 79800,
+      "change": -3.04,
+      "diff": -2500,
+      "volume": 2108292,
+      "tr_val": 167379540250,
+      "high52": 88600,
+      "low52": 50400,
+      "mktcap": 171402,
+      "sector": "통신",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": -0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 1.15,
       "f_consec": 0,
       "i_consec": 0,
-      "obv_above_ma": false,
+      "obv_above_ma": true,
       "nh_flag": "",
-      "nh_ratio": 0,
+      "nh_ratio": 90.1,
       "supply_periods": {
         "day": {
-          "foreign": 0,
-          "inst": 0,
+          "foreign": -2398,
+          "inst": -15773,
           "indiv": 0
         },
         "week": {
-          "foreign": 0,
-          "inst": 0,
+          "foreign": -56680,
+          "inst": 34578,
           "indiv": 0
         },
         "month": {
-          "foreign": 0,
-          "inst": 0,
+          "foreign": -158302,
+          "inst": 140599,
           "indiv": 0
         }
       },
-      "foreign_today": 0,
-      "inst_today": 0,
+      "foreign_today": -2398,
+      "inst_today": -15773,
+      "indiv_today": 0
+    },
+    {
+      "code": "032830",
+      "name": "삼성생명",
+      "market": "KOSPI",
+      "price": 230000,
+      "change": -3.77,
+      "diff": -9000,
+      "volume": 672911,
+      "tr_val": 156015121000,
+      "high52": 259500,
+      "low52": 73300,
+      "mktcap": 460000,
+      "sector": "보험",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": -0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.42,
+      "f_consec": 0,
+      "i_consec": 0,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 88.6,
+      "supply_periods": {
+        "day": {
+          "foreign": -19990,
+          "inst": -2875,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -201722,
+          "inst": 55883,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -285070,
+          "inst": 122693,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -19990,
+      "inst_today": -2875,
+      "indiv_today": 0
+    },
+    {
+      "code": "226950",
+      "name": "올릭스",
+      "market": "KOSPI",
+      "price": 180000,
+      "change": 12.92,
+      "diff": 20600,
+      "volume": 802519,
+      "tr_val": 140870182850,
+      "high52": 185500,
+      "low52": 34500,
+      "mktcap": 36342,
+      "sector": "일반서비스",
+      "phase": "🟢 P2 거래량돌파",
+      "phase_key": "p2",
+      "smp": 0.0,
+      "muges_ratio": 0.97,
+      "vol_ratio": 2.0,
+      "f_consec": 5,
+      "i_consec": 7,
+      "obv_above_ma": true,
+      "nh_flag": "📍신고가근접",
+      "nh_ratio": 97.0,
+      "supply_periods": {
+        "day": {
+          "foreign": 29743,
+          "inst": 6131,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 106728,
+          "inst": 31394,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 102923,
+          "inst": 45346,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 29743,
+      "inst_today": 6131,
+      "indiv_today": 0
+    },
+    {
+      "code": "003670",
+      "name": "포스코퓨처엠",
+      "market": "KOSPI",
+      "price": 247000,
+      "change": 0.0,
+      "diff": 0,
+      "volume": 485158,
+      "tr_val": 119443098750,
+      "high52": 260000,
+      "low52": 98500,
+      "mktcap": 219697,
+      "sector": "전기·전자",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": 0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.9,
+      "f_consec": 1,
+      "i_consec": 0,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 95.0,
+      "supply_periods": {
+        "day": {
+          "foreign": 12287,
+          "inst": -150,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": 72524,
+          "inst": 24733,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 69760,
+          "inst": 55451,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 12287,
+      "inst_today": -150,
+      "indiv_today": 0
+    },
+    {
+      "code": "011200",
+      "name": "HMM",
+      "market": "KOSPI",
+      "price": 21350,
+      "change": -4.26,
+      "diff": -950,
+      "volume": 4005360,
+      "tr_val": 86311336375,
+      "high52": 26250,
+      "low52": 17560,
+      "mktcap": 201381,
+      "sector": "운송·창고",
+      "phase": "🔵 P1 OBV매집",
+      "phase_key": "p1",
+      "smp": -0.0,
+      "muges_ratio": 1.02,
+      "vol_ratio": 1.58,
+      "f_consec": 0,
+      "i_consec": 0,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 81.3,
+      "supply_periods": {
+        "day": {
+          "foreign": -6300,
+          "inst": -11211,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -12856,
+          "inst": -9004,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 6285,
+          "inst": 8893,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -6300,
+      "inst_today": -11211,
+      "indiv_today": 0
+    },
+    {
+      "code": "030200",
+      "name": "KT",
+      "market": "KOSPI",
+      "price": 63800,
+      "change": -1.24,
+      "diff": -800,
+      "volume": 476270,
+      "tr_val": 30470573047,
+      "high52": 69400,
+      "low52": 46200,
+      "mktcap": 160790,
+      "sector": "통신",
+      "phase": "",
+      "phase_key": "none",
+      "smp": 0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.78,
+      "f_consec": 0,
+      "i_consec": 1,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 91.9,
+      "supply_periods": {
+        "day": {
+          "foreign": -136,
+          "inst": 4364,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -244,
+          "inst": -1110,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -918,
+          "inst": 52220,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -136,
+      "inst_today": 4364,
+      "indiv_today": 0
+    },
+    {
+      "code": "263750",
+      "name": "펄어비스",
+      "market": "KOSPI",
+      "price": 53600,
+      "change": 4.69,
+      "diff": 2400,
+      "volume": 470516,
+      "tr_val": 24770258250,
+      "high52": 59500,
+      "low52": 28750,
+      "mktcap": 34437,
+      "sector": "IT 서비스",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 0.98,
+      "vol_ratio": 0.97,
+      "f_consec": 0,
+      "i_consec": 1,
+      "obv_above_ma": true,
+      "nh_flag": "",
+      "nh_ratio": 90.1,
+      "supply_periods": {
+        "day": {
+          "foreign": -206,
+          "inst": 3705,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -4003,
+          "inst": -913,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -23264,
+          "inst": 2547,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -206,
+      "inst_today": 3705,
+      "indiv_today": 0
+    },
+    {
+      "code": "251270",
+      "name": "넷마블",
+      "market": "KOSPI",
+      "price": 52600,
+      "change": -3.13,
+      "diff": -1700,
+      "volume": 460106,
+      "tr_val": 24181698100,
+      "high52": 69000,
+      "low52": 37500,
+      "mktcap": 45212,
+      "sector": "IT 서비스",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 1.01,
+      "vol_ratio": 1.56,
+      "f_consec": 1,
+      "i_consec": 0,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 76.2,
+      "supply_periods": {
+        "day": {
+          "foreign": 1925,
+          "inst": -2520,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -5713,
+          "inst": -49,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -14270,
+          "inst": 21015,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 1925,
+      "inst_today": -2520,
+      "indiv_today": 0
+    },
+    {
+      "code": "035900",
+      "name": "JYP엔터",
+      "market": "KOSPI",
+      "price": 69800,
+      "change": 0.58,
+      "diff": 400,
+      "volume": 316008,
+      "tr_val": 22072523950,
+      "high52": 88500,
+      "low52": 56600,
+      "mktcap": 24802,
+      "sector": "오락·문화",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.81,
+      "f_consec": 1,
+      "i_consec": 1,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 78.9,
+      "supply_periods": {
+        "day": {
+          "foreign": 2535,
+          "inst": 83,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -1142,
+          "inst": -8142,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": 21415,
+          "inst": -15509,
+          "indiv": 0
+        }
+      },
+      "foreign_today": 2535,
+      "inst_today": 83,
+      "indiv_today": 0
+    },
+    {
+      "code": "112040",
+      "name": "위메이드",
+      "market": "KOSPI",
+      "price": 26000,
+      "change": -1.14,
+      "diff": -300,
+      "volume": 143635,
+      "tr_val": 3738933950,
+      "high52": 43500,
+      "low52": 23500,
+      "mktcap": 8827,
+      "sector": "IT 서비스",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.64,
+      "f_consec": 0,
+      "i_consec": 1,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 59.8,
+      "supply_periods": {
+        "day": {
+          "foreign": -389,
+          "inst": 420,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -1812,
+          "inst": -857,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -5725,
+          "inst": 1386,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -389,
+      "inst_today": 420,
+      "indiv_today": 0
+    },
+    {
+      "code": "293490",
+      "name": "카카오게임즈",
+      "market": "KOSPI",
+      "price": 14630,
+      "change": -0.81,
+      "diff": -120,
+      "volume": 245705,
+      "tr_val": 3595719135,
+      "high52": 23600,
+      "low52": 12900,
+      "mktcap": 13136,
+      "sector": "IT 서비스",
+      "phase": "",
+      "phase_key": "none",
+      "smp": -0.0,
+      "muges_ratio": 1.0,
+      "vol_ratio": 0.66,
+      "f_consec": 0,
+      "i_consec": 2,
+      "obv_above_ma": false,
+      "nh_flag": "",
+      "nh_ratio": 62.0,
+      "supply_periods": {
+        "day": {
+          "foreign": -540,
+          "inst": 439,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -4039,
+          "inst": -263,
+          "indiv": 0
+        },
+        "month": {
+          "foreign": -9670,
+          "inst": 3080,
+          "indiv": 0
+        }
+      },
+      "foreign_today": -540,
+      "inst_today": 439,
       "indiv_today": 0
     }
   ],
@@ -589,44 +1337,124 @@
         {
           "name": "한미반도체",
           "market": "KOSPI",
+          "price": 323500,
           "amt": 111137
         },
         {
           "name": "카카오",
           "market": "KOSPI",
+          "price": 62300,
           "amt": 74290
         },
         {
           "name": "한화에어로스페이스",
           "market": "KOSPI",
+          "price": 1195000,
           "amt": 53260
         },
         {
           "name": "현대차",
           "market": "KOSPI",
+          "price": 674000,
           "amt": 36280
         },
         {
+          "name": "셀트리온",
+          "market": "KOSPI",
+          "price": 238500,
+          "amt": 33000
+        },
+        {
           "name": "올릭스",
-          "market": "KOSDAQ",
+          "market": "KOSPI",
+          "price": 180000,
           "amt": 29743
+        },
+        {
+          "name": "서진시스템",
+          "market": "KOSPI",
+          "price": 47550,
+          "amt": 26862
+        },
+        {
+          "name": "알테오젠",
+          "market": "KOSPI",
+          "price": 407500,
+          "amt": 25467
+        },
+        {
+          "name": "에코프로비엠",
+          "market": "KOSPI",
+          "price": 221500,
+          "amt": 23359
+        },
+        {
+          "name": "LG에너지솔루션",
+          "market": "KOSPI",
+          "price": 427000,
+          "amt": 17124
         }
       ],
       "top_sell": [
         {
           "name": "삼성전자",
           "market": "KOSPI",
+          "price": 216500,
           "amt": -4224235
         },
         {
           "name": "SK하이닉스",
           "market": "KOSPI",
+          "price": 1061000,
           "amt": -2502937
+        },
+        {
+          "name": "기아",
+          "market": "KOSPI",
+          "price": 205500,
+          "amt": -135207
         },
         {
           "name": "NAVER",
           "market": "KOSPI",
+          "price": 254500,
           "amt": -80254
+        },
+        {
+          "name": "삼성전기",
+          "market": "KOSPI",
+          "price": 448500,
+          "amt": -59049
+        },
+        {
+          "name": "KB금융",
+          "market": "KOSPI",
+          "price": 159000,
+          "amt": -58938
+        },
+        {
+          "name": "LG전자",
+          "market": "KOSPI",
+          "price": 145700,
+          "amt": -46498
+        },
+        {
+          "name": "삼성생명",
+          "market": "KOSPI",
+          "price": 230000,
+          "amt": -19990
+        },
+        {
+          "name": "HMM",
+          "market": "KOSPI",
+          "price": 21350,
+          "amt": -6300
+        },
+        {
+          "name": "SK텔레콤",
+          "market": "KOSPI",
+          "price": 79800,
+          "amt": -2398
         }
       ]
     },
@@ -635,49 +1463,124 @@
         {
           "name": "삼성전자",
           "market": "KOSPI",
+          "price": 216500,
           "amt": 329231
         },
         {
           "name": "한미반도체",
           "market": "KOSPI",
+          "price": 323500,
           "amt": 136897
         },
         {
           "name": "SK하이닉스",
           "market": "KOSPI",
+          "price": 1061000,
           "amt": 100890
         },
         {
           "name": "카카오",
           "market": "KOSPI",
+          "price": 62300,
           "amt": 79946
         },
         {
+          "name": "기아",
+          "market": "KOSPI",
+          "price": 205500,
+          "amt": 56023
+        },
+        {
+          "name": "알테오젠",
+          "market": "KOSPI",
+          "price": 407500,
+          "amt": 29656
+        },
+        {
+          "name": "LG전자",
+          "market": "KOSPI",
+          "price": 145700,
+          "amt": 23054
+        },
+        {
+          "name": "에코프로",
+          "market": "KOSPI",
+          "price": 185000,
+          "amt": 20014
+        },
+        {
           "name": "에코프로비엠",
-          "market": "KOSDAQ",
+          "market": "KOSPI",
+          "price": 221500,
           "amt": 17920
+        },
+        {
+          "name": "서진시스템",
+          "market": "KOSPI",
+          "price": 47550,
+          "amt": 17583
         }
       ],
       "top_sell": [
         {
+          "name": "삼성전기",
+          "market": "KOSPI",
+          "price": 448500,
+          "amt": -18609
+        },
+        {
           "name": "현대차",
           "market": "KOSPI",
+          "price": 674000,
           "amt": -18075
+        },
+        {
+          "name": "신한지주",
+          "market": "KOSPI",
+          "price": 96900,
+          "amt": -16506
+        },
+        {
+          "name": "SK텔레콤",
+          "market": "KOSPI",
+          "price": 79800,
+          "amt": -15773
         },
         {
           "name": "NAVER",
           "market": "KOSPI",
+          "price": 254500,
           "amt": -14728
         },
         {
-          "name": "한화에어로스페이스",
+          "name": "셀트리온",
           "market": "KOSPI",
-          "amt": -622
+          "price": 238500,
+          "amt": -13902
         },
         {
-          "name": "포스코퓨처엠",
+          "name": "하나금융지주",
           "market": "KOSPI",
-          "amt": -150
+          "price": 121800,
+          "amt": -12181
+        },
+        {
+          "name": "HMM",
+          "market": "KOSPI",
+          "price": 21350,
+          "amt": -11211
+        },
+        {
+          "name": "삼성생명",
+          "market": "KOSPI",
+          "price": 230000,
+          "amt": -2875
+        },
+        {
+          "name": "넷마블",
+          "market": "KOSPI",
+          "price": 52600,
+          "amt": -2520
         }
       ]
     },
@@ -688,15 +1591,19 @@
   },
   "phase_stats": {
     "golden": 0,
-    "p1": 3,
+    "p1": 11,
     "p2": 5,
     "p3": 1,
-    "new_high": 4
+    "new_high": 5,
+    "total": 30
   },
   "summary_lines": [
-    "외국인 +0 | 기관 +0 | 개인 +0",
-    "🟢 P2 상승신호 5종목: 한미반도체, LG에너지솔루션, 카카오, 서진시스템, 올릭스",
+    "🟢 P2 신호 5종목: 한미반도체, 카카오, 서진시스템, LG에너지솔루션, 올릭스",
     "⚠️ P3 경고 1종목: NAVER",
-    "🔥 52주 신고가: 삼성전자, 현대차, 한미반도체, 올릭스"
+    "🔥 52주 신고가: 삼성전자, 현대차, 한미반도체, 에코프로, 올릭스"
+  ],
+  "available_dates": [
+    "2026-03-01",
+    "2026-02-28"
   ]
 }
