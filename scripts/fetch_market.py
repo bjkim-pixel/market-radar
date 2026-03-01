@@ -119,19 +119,14 @@ def fetch_indices(token):
 
 # ── 거래대금 상위 종목 (엔드포인트 수정) ────────────────
 def fetch_top_volume_stocks(token, market="J", top_n=100):
-    """
-    TR: FHPST01710000
-    올바른 엔드포인트: /uapi/domestic-stock/v1/quotations/volume-rank
-    """
+    if market != "J":
+        return fetch_fallback_stocks(token, market)
     stocks = []
     try:
-        if market != "J":
-    return fetch_fallback_stocks(token, market)
-
-d = kis_get(
-    "/uapi/domestic-stock/v1/quotations/volume-rank",
-    {
-        "fid_cond_mrkt_div_code": market,
+        d = kis_get(
+            "/uapi/domestic-stock/v1/quotations/volume-rank",
+            {
+                "fid_cond_mrkt_div_code": market,
                 "fid_cond_scr_div_code":  "20171",
                 "fid_input_iscd":         "0000",
                 "fid_div_cls_code":       "0",
