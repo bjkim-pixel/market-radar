@@ -93,11 +93,11 @@ def fetch_indices(token):
     for code, name in [("0001","KOSPI"), ("1001","KOSDAQ"), ("2001","KSP200")]:
         try:
             d = kis_get(
-                "/uapi/domestic-stock/v1/quotations/inquire-index-price",
-                {"iscd": code},   # ← 이것만 필요
-                "FHPUP02100000",
-                token
-            )
+    "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+    {"fid_cond_mrkt_div_code": "U", "fid_input_iscd": code},
+    "FHPUP02100000",
+    token
+)
             out = d.get("output") or d.get("output1") or {}
             if isinstance(out, list):
                 out = out[0] if out else {}
@@ -125,10 +125,13 @@ def fetch_top_volume_stocks(token, market="J", top_n=100):
     """
     stocks = []
     try:
-        d = kis_get(
-            "/uapi/domestic-stock/v1/quotations/volume-rank",  # ← 수정
-            {
-                "fid_cond_mrkt_div_code": market,
+        if market != "J":
+    return fetch_fallback_stocks(token, market)
+
+d = kis_get(
+    "/uapi/domestic-stock/v1/quotations/volume-rank",
+    {
+        "fid_cond_mrkt_div_code": market,
                 "fid_cond_scr_div_code":  "20171",
                 "fid_input_iscd":         "0000",
                 "fid_div_cls_code":       "0",
