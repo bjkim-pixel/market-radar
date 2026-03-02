@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-03-02 09:25",
+  "updated_at": "2026-03-02 09:32",
   "date": "2026-03-02",
   "indices": [
     {
@@ -30,7 +30,242 @@
       "tr_amt": 44543969.0
     }
   ],
-  "sectors": [],
+  "sectors": [
+    {
+      "iscd": "1028",
+      "name": "에너지",
+      "mkt_type": "KOSPI",
+      "value": 2069.95,
+      "change": -0.44,
+      "tr_amt": 3.114466,
+      "history": []
+    },
+    {
+      "iscd": "1029",
+      "name": "소재",
+      "mkt_type": "KOSPI",
+      "value": 2719.76,
+      "change": -0.54,
+      "tr_amt": 0.528556,
+      "history": []
+    },
+    {
+      "iscd": "1030",
+      "name": "산업재",
+      "mkt_type": "KOSPI",
+      "value": 6781.96,
+      "change": 0.23,
+      "tr_amt": 0.548147,
+      "history": []
+    },
+    {
+      "iscd": "1031",
+      "name": "경기소비재",
+      "mkt_type": "KOSPI",
+      "value": 714.79,
+      "change": -1.03,
+      "tr_amt": 0.011576,
+      "history": []
+    },
+    {
+      "iscd": "1032",
+      "name": "필수소비재",
+      "mkt_type": "KOSPI",
+      "value": 1242.12,
+      "change": 0.88,
+      "tr_amt": 0.012507,
+      "history": []
+    },
+    {
+      "iscd": "1033",
+      "name": "건강관리",
+      "mkt_type": "KOSPI",
+      "value": 997.52,
+      "change": -0.18,
+      "tr_amt": 0.787602,
+      "history": []
+    },
+    {
+      "iscd": "1035",
+      "name": "IT",
+      "mkt_type": "KOSPI",
+      "value": 7192.68,
+      "change": -1.18,
+      "tr_amt": 44.458542,
+      "history": []
+    },
+    {
+      "iscd": "1036",
+      "name": "통신서비스",
+      "mkt_type": "KOSPI",
+      "value": 6850.78,
+      "change": -1.15,
+      "tr_amt": 36.012152,
+      "history": []
+    },
+    {
+      "iscd": "0003",
+      "name": "대형주",
+      "mkt_type": "KOSPI",
+      "value": 4672.05,
+      "change": -0.84,
+      "tr_amt": 4.271378,
+      "history": []
+    },
+    {
+      "iscd": "0004",
+      "name": "중형주",
+      "mkt_type": "KOSPI",
+      "value": 2904.17,
+      "change": -0.42,
+      "tr_amt": 3.341263,
+      "history": []
+    },
+    {
+      "iscd": "0005",
+      "name": "소형주",
+      "mkt_type": "KOSPI",
+      "value": 4913.09,
+      "change": -1.97,
+      "tr_amt": 0.31328,
+      "history": []
+    },
+    {
+      "iscd": "2007",
+      "name": "건설",
+      "mkt_type": "KOSDAQ",
+      "value": 7192.68,
+      "change": -1.18,
+      "tr_amt": 44.458542,
+      "history": []
+    },
+    {
+      "iscd": "2008",
+      "name": "유통",
+      "mkt_type": "KOSDAQ",
+      "value": 6850.78,
+      "change": -1.15,
+      "tr_amt": 36.012152,
+      "history": []
+    },
+    {
+      "iscd": "2009",
+      "name": "운송",
+      "mkt_type": "KOSDAQ",
+      "value": 787.69,
+      "change": -1.45,
+      "tr_amt": 2.288999,
+      "history": []
+    },
+    {
+      "iscd": "2010",
+      "name": "금융",
+      "mkt_type": "KOSDAQ",
+      "value": 1634.73,
+      "change": 0.51,
+      "tr_amt": 3.70009,
+      "history": []
+    },
+    {
+      "iscd": "2011",
+      "name": "오락문화",
+      "mkt_type": "KOSDAQ",
+      "value": 1634.48,
+      "change": 3.15,
+      "tr_amt": 1.02256,
+      "history": []
+    },
+    {
+      "iscd": "2012",
+      "name": "통신방송",
+      "mkt_type": "KOSDAQ",
+      "value": 1901.8,
+      "change": 0.4,
+      "tr_amt": 1.962336,
+      "history": []
+    },
+    {
+      "iscd": "2013",
+      "name": "인터넷",
+      "mkt_type": "KOSDAQ",
+      "value": 9552.89,
+      "change": -1.22,
+      "tr_amt": 23.817976,
+      "history": []
+    },
+    {
+      "iscd": "2014",
+      "name": "디지털컨텐츠",
+      "mkt_type": "KOSDAQ",
+      "value": 1751.26,
+      "change": -3.43,
+      "tr_amt": 2.983331,
+      "history": []
+    },
+    {
+      "iscd": "2015",
+      "name": "소프트웨어",
+      "mkt_type": "KOSDAQ",
+      "value": 1447.15,
+      "change": -3.41,
+      "tr_amt": 1.552155,
+      "history": []
+    },
+    {
+      "iscd": "2016",
+      "name": "컴퓨터서비스",
+      "mkt_type": "KOSDAQ",
+      "value": 3318.4,
+      "change": 1.83,
+      "tr_amt": 5.244835,
+      "history": []
+    },
+    {
+      "iscd": "2017",
+      "name": "통신장비",
+      "mkt_type": "KOSDAQ",
+      "value": 1368.56,
+      "change": 0.03,
+      "tr_amt": 2.848145,
+      "history": []
+    },
+    {
+      "iscd": "2018",
+      "name": "IT부품",
+      "mkt_type": "KOSDAQ",
+      "value": 2641.56,
+      "change": -0.53,
+      "tr_amt": 1.295156,
+      "history": []
+    },
+    {
+      "iscd": "2019",
+      "name": "반도체",
+      "mkt_type": "KOSDAQ",
+      "value": 5994.35,
+      "change": -1.36,
+      "tr_amt": 8.127053,
+      "history": []
+    },
+    {
+      "iscd": "2021",
+      "name": "의료정밀기기",
+      "mkt_type": "KOSDAQ",
+      "value": 13243.69,
+      "change": -0.56,
+      "tr_amt": 35.125104,
+      "history": []
+    },
+    {
+      "iscd": "2022",
+      "name": "음식료담배",
+      "mkt_type": "KOSDAQ",
+      "value": 2554.25,
+      "change": -0.18,
+      "tr_amt": 3.694748,
+      "history": []
+    }
+  ],
   "stocks": [],
   "top_traders": {
     "foreign_buy": [],
