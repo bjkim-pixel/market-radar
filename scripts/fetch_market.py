@@ -1,4 +1,9 @@
-# fetch_market.py v8
+# fetch_market.py v8-fix
+# 핵심 수정:
+# - FHKST04010200 파라미터 단순화 (v6 방식으로 복구)
+# - FHKUP03500100 섹터 차트 제거 (빈응답 → 현재값만 수집)
+# - FHPST01600000 제거 (미지원)
+# - FHKST01010900 유지 (종목별 투자자 히스토리, 정상동작)
 
 import os, json, math, time, requests
 from datetime import datetime, timedelta
@@ -7,7 +12,6 @@ APP_KEY    = os.environ["KIS_APP_KEY"]
 APP_SECRET = os.environ["KIS_APP_SECRET"]
 BASE_URL   = "https://openapi.koreainvestment.com:9443"
 TODAY      = datetime.now().strftime("%Y%m%d")
-D30_START  = (datetime.now() - timedelta(days=44)).strftime("%Y%m%d")
 
 
 def get_token():
@@ -32,18 +36,26 @@ def kis_get(path, params, tr_id, token, retry=2):
     }
     for attempt in range(retry):
         try:
-            r = requests.get(f"{BASE_URL}{path}", headers=headers, params=params, timeout=15)
+            r = requests.get(
+                f"{BASE_URL}{path}",
+                headers=headers,
+                params=params,
+                timeout=15
+            )
+            # 빈 응답 처리
+            if not r.text or not r.text.strip():
+                return {}
             d = r.json()
             if d.get("rt_cd") == "0":
                 return d
             code = d.get("msg_cd", "")
             if code in ("EGW00201", "EGW00202"):
-                time.sleep(0.35)
+                time.sleep(0.4)
                 continue
-            print(f"  API error {tr_id}: {d.get('msg1','')}")
+            print(f"  API error [{tr_id}]: {d.get('msg1','')}")
             return {}
         except Exception as e:
-            print(f"  request failed {tr_id}: {e}")
+            print(f"  request failed [{tr_id}]: {e}")
             time.sleep(0.5)
     return {}
 
@@ -67,13 +79,13 @@ def clean_nan(obj):
 
 
 # ----------------------------------------
-# 1. 지수 조회
+# 1. 지수 조회 (FHPUP02100000 - 정상동작)
 # ----------------------------------------
 def fetch_indices(token):
     INDICES = [
-        ("0001", "KOSPI",   "U"),
-        ("1001", "KOSDAQ",  "U"),
-        ("0002", "KOSPI200","U"),
+        ("0001", "KOSPI",    "U"),
+        ("1001", "KOSDAQ",   "U"),
+        ("0002", "KOSPI200", "U"),
     ]
     results = []
     for iscd, name, div in INDICES:
@@ -100,7 +112,8 @@ def fetch_indices(token):
 
 
 # ----------------------------------------
-# 2. 섹터 지수 + 30일 히스토리
+# 2. 섹터 지수 현재값 (히스토리 제거 - 빈응답 이슈)
+#    FHPUP02100000 로 현재값만 수집
 # ----------------------------------------
 KOSPI_SECTORS = [
     ("1028","에너지"),("1029","소재"),("1030","산업재"),("1031","경기소비재"),
@@ -117,48 +130,6 @@ KOSDAQ_SECTORS = [
 ]
 
 
-def fetch_sector_with_history(token, iscd, mkt_type):
-    d = kis_get(
-        "/uapi/domestic-stock/v1/quotations/inquire-index-price",
-        {"FID_COND_MRKT_DIV_CODE": "U", "FID_INPUT_ISCD": iscd},
-        "FHPUP02100000", token
-    )
-    o = d.get("output", {})
-    if not o or not safe_float(o.get("bstp_nmix_prpr", 0)):
-        return None
-
-    sec = {
-        "iscd":     iscd,
-        "name":     o.get("hts_kor_isnm", ""),
-        "mkt_type": mkt_type,
-        "value":    safe_float(o.get("bstp_nmix_prpr", 0)),
-        "change":   safe_float(o.get("bstp_nmix_prdy_ctrt", 0)),
-        "tr_amt":   safe_float(o.get("acml_tr_pbmn", 0)) / 1_000_000,
-        "history":  [],
-    }
-    time.sleep(0.06)
-
-    h = kis_get(
-        "/uapi/domestic-stock/v1/quotations/inquire-index-chartprice",
-        {
-            "FID_COND_MRKT_DIV_CODE": "U",
-            "FID_INPUT_ISCD":          iscd,
-            "FID_INPUT_DATE_1":        D30_START,
-            "FID_INPUT_DATE_2":        TODAY,
-            "FID_PERIOD_DIV_CODE":     "D",
-        },
-        "FHKUP03500100", token
-    )
-    for row in (h.get("output2") or []):
-        dt = row.get("stck_bsop_date", "")
-        cl = safe_float(row.get("bstp_nmix_prpr", 0))
-        if dt and cl:
-            sec["history"].append({"date": dt, "close": cl})
-    sec["history"].sort(key=lambda x: x["date"])
-    time.sleep(0.08)
-    return sec
-
-
 def fetch_all_sectors(token):
     sectors = []
     targets = (
@@ -166,37 +137,70 @@ def fetch_all_sectors(token):
         [(iscd, n, "KOSDAQ") for iscd, n in KOSDAQ_SECTORS]
     )
     for iscd, name, mkt in targets:
-        s = fetch_sector_with_history(token, iscd, mkt)
-        if s and s.get("name"):
-            sectors.append(s)
-        time.sleep(0.05)
+        d = kis_get(
+            "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+            {"FID_COND_MRKT_DIV_CODE": "U", "FID_INPUT_ISCD": iscd},
+            "FHPUP02100000", token
+        )
+        o = d.get("output", {})
+        val = safe_float(o.get("bstp_nmix_prpr", 0))
+        if not o or not val:
+            time.sleep(0.05)
+            continue
+        sectors.append({
+            "iscd":     iscd,
+            "name":     o.get("hts_kor_isnm", name),
+            "mkt_type": mkt,
+            "value":    val,
+            "change":   safe_float(o.get("bstp_nmix_prdy_ctrt", 0)),
+            "tr_amt":   safe_float(o.get("acml_tr_pbmn", 0)) / 1_000_000,
+            "history":  [],  # 차트 히스토리는 현재 미지원
+        })
+        time.sleep(0.06)
     print(f"  [sector] {len(sectors)}")
     return sectors
 
 
 # ----------------------------------------
-# 3. 거래대금 상위 종목
+# 3. 거래대금 상위 종목 (v6 방식으로 복구)
+#    TR_ID: FHKST04010200
+#    파라미터를 v6 최소 구성으로 단순화
 # ----------------------------------------
 def fetch_top_volume_stocks(token, mkt_div, top_n=50):
+    # v6에서 동작하던 최소 파라미터 구성
+    params = {
+        "FID_COND_MRKT_DIV_CODE": mkt_div,
+        "FID_COND_SCR_DIV_CODE":  "20171",
+        "FID_INPUT_ISCD":         "0000",
+        "FID_DIV_CLS_CODE":       "0",
+        "FID_BLNG_CLS_CODE":      "0",
+        "FID_TRGT_CLS_CODE":      "111111111",
+        "FID_TRGT_EXLS_CLS_CODE": "000000",
+        "FID_INPUT_PRICE_1":      "",
+        "FID_INPUT_PRICE_2":      "",
+        "FID_VOL_CNT":            "",
+        "FID_INPUT_DATE_1":       "",
+    }
     d = kis_get(
         "/uapi/domestic-stock/v1/quotations/volume-rank",
-        {
-            "FID_COND_MRKT_DIV_CODE": mkt_div,
-            "FID_COND_SCR_DIV_CODE":  "20171",
-            "FID_INPUT_ISCD":         "0000",
-            "FID_DIV_CLS_CODE":       "0",
-            "FID_BLNG_CLS_CODE":      "0",
-            "FID_TRGT_CLS_CODE":      "111111111",
-            "FID_TRGT_EXLS_CLS_CODE": "000000",
-            "FID_INPUT_PRICE_1":      "",
-            "FID_INPUT_PRICE_2":      "",
-            "FID_VOL_CNT":            "",
-            "FID_INPUT_DATE_1":       "",
-        },
-        "FHKST04010200", token
+        params, "FHKST04010200", token
     )
+
+    # 실패 시 거래량 순위 대신 시장 조회로 대체 시도
+    if not d or not d.get("output"):
+        print(f"  [volume rank] FHKST04010200 failed, trying FHKST04010100...")
+        d = kis_get(
+            "/uapi/domestic-stock/v1/quotations/volume-rank",
+            params, "FHKST04010100", token
+        )
+
     rows = d.get("output", [])
     mkt_name = "KOSPI" if mkt_div == "J" else "KOSDAQ"
+
+    if not rows:
+        print(f"  [volume rank] {mkt_name}: no data")
+        return []
+
     results = []
     for r in rows[:top_n]:
         code  = r.get("mksc_shrn_iscd", "").strip()
@@ -221,66 +225,7 @@ def fetch_top_volume_stocks(token, mkt_div, top_n=50):
 
 
 # ----------------------------------------
-# 4. 외국인/기관 순매수 상위 전용 API
-#    TR_ID: FHPST01600000
-# ----------------------------------------
-def fetch_investor_top_stocks(token, investor="foreign", top_n=50):
-    scr_code = "20176" if investor == "foreign" else "20177"
-    label    = "foreign" if investor == "foreign" else "inst"
-
-    d = kis_get(
-        "/uapi/domestic-stock/v1/quotations/investor-trend-estimate",
-        {
-            "fid_cond_mrkt_div_code":  "J",
-            "fid_cond_scr_div_code":   scr_code,
-            "fid_input_iscd":          "0000",
-            "fid_trgt_cls_code":       "0",
-            "fid_div_cls_code":        "0",
-            "fid_rank_sort_cls_code":  "0",
-            "fid_input_date_1":        "",
-        },
-        "FHPST01600000", token
-    )
-
-    rows = d.get("output", [])
-    if not rows:
-        print(f"  [investor top] {label}: no data (market closed or API unavailable)")
-        return []
-
-    results = []
-    for r in rows[:top_n]:
-        code  = r.get("mksc_shrn_iscd", "").strip()
-        price = safe_int(r.get("stck_prpr", 0))
-        if not code or not price:
-            continue
-
-        if investor == "foreign":
-            ntby_amt = safe_float(r.get("frgn_ntby_tr_pbmn", 0)) * 1_000_000
-        else:
-            ntby_amt = safe_float(r.get("orgn_ntby_tr_pbmn", 0)) * 1_000_000
-
-        results.append({
-            "code":              code,
-            "name":              r.get("hts_kor_isnm", "").strip(),
-            "market":            "KOSPI",
-            "price":             price,
-            "change":            safe_float(r.get("prdy_ctrt", 0)),
-            "diff":              safe_int(r.get("prdy_vrss", 0)),
-            "volume":            safe_int(r.get("acml_vol", 0)),
-            "tr_val":            safe_int(r.get("acml_tr_pbmn", 0)),
-            "sector":            r.get("bstp_kor_isnm", "").strip(),
-            "high52":            safe_int(r.get("d250_hgpr", 0)),
-            "low52":             safe_int(r.get("d250_lwpr", 0)),
-            "ntby_amt":          ntby_amt,
-            "from_investor_api": True,
-        })
-
-    print(f"  [investor top] {label} {len(results)}")
-    return results
-
-
-# ----------------------------------------
-# 5. 투자자별 매매동향 30일 (종목별)
+# 4. 종목별 투자자 매매동향 30일
 #    TR_ID: FHKST01010900
 # ----------------------------------------
 def fetch_stock_investor_history(token, code, market="J"):
@@ -298,8 +243,8 @@ def fetch_stock_investor_history(token, code, market="J"):
         result.append({
             "date":    r.get("stck_bsop_date", ""),
             "foreign": safe_int(r.get("frgn_ntby_qty", 0)),
-            "inst":    safe_int(r.get("orgn_ntby_qty",  0)),
-            "indiv":   safe_int(r.get("prsn_ntby_qty",  0)),
+            "inst":    safe_int(r.get("orgn_ntby_qty", 0)),
+            "indiv":   safe_int(r.get("prsn_ntby_qty", 0)),
             "famt":    safe_float(r.get("frgn_ntby_tr_pbmn", 0)) * 1_000_000,
             "iamt":    safe_float(r.get("orgn_ntby_tr_pbmn", 0)) * 1_000_000,
             "pamt":    safe_float(r.get("prsn_ntby_tr_pbmn", 0)) * 1_000_000,
@@ -322,9 +267,9 @@ def calc_supply_periods(investor_history):
 
 
 # ----------------------------------------
-# 6. 종목 상세 (수급 + Phase)
+# 5. Phase 판정
 # ----------------------------------------
-def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up, foreign_today, inst_today):
+def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
     if nh_flag and f_consec >= 3 and smp > 0:
         return "golden", "GOLDEN - 신고가+외인매집"
     if f_consec >= 5 and i_consec >= 3 and smp > 1:
@@ -372,7 +317,7 @@ def fetch_stock_detail(token, stock):
     nh_ratio = round(price / high52 * 100, 1) if high52 else 0
 
     nh_flag = ""
-    if nh_ratio >= 100: nh_flag = "신고가"
+    if nh_ratio >= 100:  nh_flag = "신고가"
     elif nh_ratio >= 99: nh_flag = "99%"
     elif nh_ratio >= 97: nh_flag = "97%+"
 
@@ -380,10 +325,7 @@ def fetch_stock_detail(token, stock):
     smp    = round((foreign_today + inst_today) / tr_val * 100, 2)
     obv_up = (foreign_today + inst_today) > 0
 
-    phase_key, phase = determine_phase(
-        f_consec, i_consec, smp, nh_flag, obv_up,
-        foreign_today, inst_today
-    )
+    phase_key, phase = determine_phase(f_consec, i_consec, smp, nh_flag, obv_up)
 
     stock.update({
         "foreign_today":  foreign_today,
@@ -406,7 +348,7 @@ def fetch_stock_detail(token, stock):
 
 
 # ----------------------------------------
-# 7. 집계 함수들
+# 6. 집계
 # ----------------------------------------
 def calc_market_supply(stocks):
     return {
@@ -433,9 +375,8 @@ def build_summary(indices, stocks, market_supply, phase_stats):
 
     lines.append(f"외국인 {amt_str(fn)} / 기관 {amt_str(inn)} / 개인 {amt_str(iv)}")
 
-    ps = phase_stats
-    if ps.get("golden"):
-        lines.append(f"GOLDEN {ps['golden']}개 / P1매집 {ps.get('p1',0)}개")
+    if phase_stats.get("golden"):
+        lines.append(f"GOLDEN {phase_stats['golden']}개 / P1매집 {phase_stats.get('p1',0)}개")
 
     nh = [s for s in stocks if s.get("nh_flag")]
     if nh:
@@ -454,33 +395,27 @@ def main():
     indices = fetch_indices(token)
     time.sleep(0.3)
 
-    print("\n[2] sector + 30d history...")
+    print("\n[2] sector (current price only)...")
     sectors = fetch_all_sectors(token)
     time.sleep(0.3)
 
     print("\n[3] volume rank...")
     kospi_vol  = fetch_top_volume_stocks(token, "J", 50)
-    time.sleep(0.2)
+    time.sleep(0.25)
     kosdaq_vol = fetch_top_volume_stocks(token, "Q", 30)
     time.sleep(0.3)
 
-    print("\n[4] investor top stocks (FHPST01600000)...")
-    foreign_top = fetch_investor_top_stocks(token, "foreign", 50)
-    time.sleep(0.35)
-    inst_top    = fetch_investor_top_stocks(token, "inst",    50)
-    time.sleep(0.35)
-
-    print("\n[5] merge stocks...")
-    all_raw = kospi_vol + kosdaq_vol + foreign_top + inst_top
+    # 종목 풀 합산
+    all_raw = kospi_vol + kosdaq_vol
     seen, unique = set(), []
     for s in sorted(all_raw, key=lambda x: x.get("tr_val", 0), reverse=True):
         if s["code"] not in seen and s["price"] > 0:
             seen.add(s["code"])
             unique.append(s)
-    print(f"  total unique: {len(unique)}")
+    print(f"\n[4] merge: {len(unique)} unique stocks")
 
-    print("\n[6] stock detail (investor history + phase)...")
-    MAX_DETAIL = 150
+    print("\n[5] stock detail (investor history + phase)...")
+    MAX_DETAIL = 120
     stocks = []
     for i, stock in enumerate(unique[:MAX_DETAIL]):
         try:
@@ -503,26 +438,23 @@ def main():
         "new_high": sum(1 for s in stocks if s.get("nh_flag")),
     }
 
-    def top_by_ntby(pool, n=20):
-        filtered = [s for s in pool if s.get("ntby_amt") is not None]
-        return sorted(filtered, key=lambda x: x.get("ntby_amt", 0), reverse=True)[:n]
+    # 수급 탭용 Top 데이터 (stocks에서 추출)
+    def top_by(stocks, key, n=20, reverse=True):
+        return sorted(
+            [s for s in stocks if s.get(key, 0) != 0],
+            key=lambda x: x.get(key, 0),
+            reverse=reverse
+        )[:n]
 
     top_traders = {
-        "foreign_buy":  top_by_ntby(foreign_top, 20),
-        "foreign_sell": sorted(
-            [s for s in foreign_top if s.get("ntby_amt", 0) < 0],
-            key=lambda x: x.get("ntby_amt", 0)
-        )[:20],
-        "inst_buy":  top_by_ntby(inst_top, 20),
-        "inst_sell": sorted(
-            [s for s in inst_top if s.get("ntby_amt", 0) < 0],
-            key=lambda x: x.get("ntby_amt", 0)
-        )[:20],
+        "foreign_buy":  top_by(stocks, "foreign_today", 20, True),
+        "foreign_sell": top_by(stocks, "foreign_today", 20, False),
+        "inst_buy":     top_by(stocks, "inst_today",    20, True),
+        "inst_sell":    top_by(stocks, "inst_today",    20, False),
     }
 
     summary_lines = build_summary(indices, stocks, market_supply, phase_stats)
-
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now_str       = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     payload = clean_nan({
         "updated_at":    now_str,
@@ -542,7 +474,6 @@ def main():
 
     print(f"\ndone: data/market.json")
     print(f"  index:{len(indices)} sector:{len(sectors)} stock:{len(stocks)}")
-    print(f"  foreign_top:{len(top_traders['foreign_buy'])} inst_top:{len(top_traders['inst_buy'])}")
     print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P3={phase_stats['p3']}")
 
 
