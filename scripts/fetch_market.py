@@ -1,5 +1,5 @@
 import os, json, math, time, requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 APP_KEY    = os.environ["KIS_APP_KEY"]
 APP_SECRET = os.environ["KIS_APP_SECRET"]
@@ -167,19 +167,14 @@ MAJOR_STOCKS = [
     ("382800","한화시스템","KOSPI"),
     ("003570","SNT다이내믹스","KOSPI"),
     ("000210","DL","KOSPI"),
-    ("014830","유니드","KOSPI"),
     ("008770","호텔신라","KOSPI"),
-    ("006650","대한유화","KOSPI"),
-    ("025560","미래에셋생명","KOSPI"),
     ("009540","HD한국조선해양","KOSPI"),
     ("000080","하이트진로","KOSPI"),
-    ("002600","조흥","KOSPI"),
-    ("004310","현대약품","KOSPI"),
-    ("105630","한세실업","KOSPI"),
-    ("018880","한온시스템","KOSPI"),
     ("307950","현대오토에버","KOSPI"),
     ("014680","한솔케미칼","KOSPI"),
     ("069620","대웅제약","KOSPI"),
+    ("018880","한온시스템","KOSPI"),
+    ("105630","한세실업","KOSPI"),
     # KOSDAQ
     ("247540","에코프로비엠","KOSDAQ"),
     ("086520","에코프로","KOSDAQ"),
@@ -349,8 +344,7 @@ def fetch_stock_price(token, code, default_market="KOSPI"):
 
 # ----------------------------------------
 # 4. 투자자 매매동향 30일
-#    FID_COND_MRKT_DIV_CODE 는 항상 "J"
-#    (KOSDAQ 종목도 "J" 사용, "Q" 사용시 오류)
+#    KOSDAQ 종목도 FID_COND_MRKT_DIV_CODE = "J" 고정
 # ----------------------------------------
 def fetch_stock_investor_history(token, code):
     d = kis_get(
@@ -376,6 +370,34 @@ def fetch_stock_investor_history(token, code):
     return result
 
 
+# ----------------------------------------
+# 5. 일별 종가 조회 (최근 30일)
+#    TR_ID: FHKST03010100
+# ----------------------------------------
+def fetch_stock_ohlcv(token, code):
+    end_dt   = datetime.now().strftime("%Y%m%d")
+    start_dt = (datetime.now() - timedelta(days=40)).strftime("%Y%m%d")
+    d = kis_get(
+        "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
+        {
+            "FID_COND_MRKT_DIV_CODE": "J",
+            "FID_INPUT_ISCD":         code,
+            "FID_INPUT_DATE_1":       start_dt,
+            "FID_INPUT_DATE_2":       end_dt,
+            "FID_PERIOD_DIV_CODE":    "D",
+            "FID_ORG_ADJ_PRC":        "1",
+        },
+        "FHKST03010100", token
+    )
+    result = {}
+    for r in (d.get("output2") or []):
+        dt = r.get("stck_bsop_date", "")
+        cl = safe_int(r.get("stck_clpr", 0))
+        if dt and cl:
+            result[dt] = cl
+    return result
+
+
 def calc_supply_periods(inv):
     def _sum(rows, n):
         return {
@@ -391,7 +413,7 @@ def calc_supply_periods(inv):
 
 
 # ----------------------------------------
-# 5. Phase 판정
+# 6. Phase 판정
 # ----------------------------------------
 def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
     if nh_flag and f_consec >= 3 and smp > 0:
@@ -407,8 +429,21 @@ def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
     return "", ""
 
 
+def determine_daily_phase(famt, iamt):
+    """일별 단순 Phase"""
+    if famt > 0 and iamt > 0:
+        return "매집",  "golden"
+    if famt > 0:
+        return "외인↑", "p2"
+    if iamt > 0:
+        return "기관↑", "p1"
+    if famt < 0 and iamt < 0:
+        return "이탈",  "p3"
+    return "-", ""
+
+
 # ----------------------------------------
-# 6. 전체 종목 수집
+# 7. 전체 종목 수집
 # ----------------------------------------
 def fetch_all_stocks(token):
     stocks = []
@@ -416,16 +451,21 @@ def fetch_all_stocks(token):
 
     for i, (code, name, default_mkt) in enumerate(MAJOR_STOCKS):
         try:
-            # 현재가 + 기본정보 (시장/업종/시총)
+            # 현재가 + 기본정보
             info = fetch_stock_price(token, code, default_mkt)
             time.sleep(0.07)
             if not info:
                 continue
 
-            # 투자자 30일 (KOSDAQ도 항상 "J")
+            # 투자자 30일 (KOSDAQ도 "J" 고정)
             inv_hist = fetch_stock_investor_history(token, code)
             time.sleep(0.07)
 
+            # 일별 종가
+            ohlcv = fetch_stock_ohlcv(token, code)
+            time.sleep(0.07)
+
+            # 오늘 수급
             today   = inv_hist[0] if inv_hist else {}
             f_today = today.get("famt", 0)
             i_today = today.get("iamt", 0)
@@ -433,6 +473,7 @@ def fetch_all_stocks(token):
 
             supply_periods = calc_supply_periods(inv_hist)
 
+            # 연속 순매수 일수
             f_consec = 0
             for row in inv_hist:
                 if row.get("foreign", 0) > 0: f_consec += 1
@@ -443,6 +484,7 @@ def fetch_all_stocks(token):
                 if row.get("inst", 0) > 0: i_consec += 1
                 else: break
 
+            # 52주 고저가
             high52   = info["high52"]
             low52    = info["low52"]
             price    = info["price"]
@@ -457,7 +499,27 @@ def fetch_all_stocks(token):
             smp    = round((f_today + i_today) / tr_val * 100, 2)
             obv_up = (f_today + i_today) > 0
 
-            phase_key, phase = determine_phase(f_consec, i_consec, smp, nh_flag, obv_up)
+            phase_key, phase = determine_phase(
+                f_consec, i_consec, smp, nh_flag, obv_up
+            )
+
+            # 일별 수급 데이터 (최근 10 영업일)
+            daily_data = []
+            for row in inv_hist[:10]:
+                dt         = row.get("date", "")
+                famt       = row.get("famt", 0)
+                iamt       = row.get("iamt", 0)
+                pamt       = row.get("pamt", 0)
+                d_phase, d_key = determine_daily_phase(famt, iamt)
+                daily_data.append({
+                    "date":      dt,
+                    "close":     ohlcv.get(dt, 0),
+                    "famt":      famt,
+                    "iamt":      iamt,
+                    "pamt":      pamt,
+                    "phase":     d_phase,
+                    "phase_key": d_key,
+                })
 
             stocks.append({
                 "code":           code,
@@ -487,6 +549,7 @@ def fetch_all_stocks(token):
                 "vol_ratio":      1.0,
                 "phase_key":      phase_key,
                 "phase":          phase,
+                "daily_data":     daily_data,
             })
 
             if (i + 1) % 20 == 0:
@@ -500,7 +563,7 @@ def fetch_all_stocks(token):
 
 
 # ----------------------------------------
-# 7. 집계
+# 8. 집계
 # ----------------------------------------
 def calc_market_supply(stocks):
     return {
@@ -551,7 +614,7 @@ def main():
     sectors = fetch_all_sectors(token)
     time.sleep(0.3)
 
-    print("\n[3] stocks (price + investor + phase)...")
+    print("\n[3] stocks (price + investor + ohlcv + phase)...")
     stocks = fetch_all_stocks(token)
     time.sleep(0.3)
 
