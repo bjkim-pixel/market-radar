@@ -885,7 +885,7 @@ function openStockModal(code) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
         <div class="t3">시장</div><div style="text-align:right">${mktBadge(s.market)}</div>
         <div class="t3">업종</div><div style="text-align:right">${s.sector||'-'}</div>
-        <div class="t3">시가총액</div><div style="text-align:right;font-family:var(--mono)">${s.mktcap?fmtAmt(s.mktcap*1e8):'-'}</div>
+        <div class="t3">시가총액</div><div style="text-align:right;font-family:var(--mono)">${s.mktcap && s.mktcap > 0 ? fmtAmt(s.mktcap * 1e8) : '-'}</div>
         <div class="t3">거래량</div><div style="text-align:right;font-family:var(--mono)">${fmtN(s.volume)}</div>
         <div class="t3">거래대금</div><div style="text-align:right;font-family:var(--mono)">${fmtAmt(s.tr_val||0)}</div>
       </div>
