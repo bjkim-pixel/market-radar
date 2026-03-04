@@ -1,707 +1,571 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-fetch_market.py v7 — KIS API 스펙 완전 정확 버전 + 섹터 추가
-=============================================================
-확인된 API 스펙:
-  지수:       FHPUP02100000   /inquire-index-price
-              fid_cond_mrkt_div_code="U", fid_input_iscd=0001/1001/2001
-  현재가:     FHKST01010100   /inquire-price
-              fid_cond_mrkt_div_code="J", fid_input_iscd=종목코드
-  일봉:       FHKST03010100   /inquire-daily-itemchartprice
-              → output2 배열 사용
-  투자자:     FHKST01010900   /inquire-investor
-              fid_cond_mrkt_div_code="J", fid_input_iscd=종목코드
-              → frgn_ntby_tr_pbmn 단위: 백만원 (× 1,000,000 = 원)
-  거래량순위: FHPST01710000   /volume-rank
-              fid_cond_mrkt_div_code="J" (KOSPI만 지원, KOSDAQ 안됨)
-  업종시세:   FHKUP03500100   /inquire-daily-indexchartprice
-              fid_cond_mrkt_div_code="U", fid_input_iscd=업종코드
-              → output1(당일), output2(기간별 배열)
-"""
-import os, json, time, math, datetime
-import requests
-import pandas as pd
-import numpy as np
+import os, json, math, time, requests
+from datetime import datetime, timedelta
 
+APP_KEY    = os.environ["KIS_APP_KEY"]
+APP_SECRET = os.environ["KIS_APP_SECRET"]
 BASE_URL   = "https://openapi.koreainvestment.com:9443"
-APP_KEY    = os.environ.get("KIS_APP_KEY", "")
-APP_SECRET = os.environ.get("KIS_APP_SECRET", "")
-TOKEN_FILE = "/tmp/kis_token_cache.json"
-KST = datetime.timezone(datetime.timedelta(hours=9))
+TODAY      = datetime.now().strftime("%Y%m%d")
 
-# ── KOSDAQ 폴백 (거래량순위 API KOSDAQ 미지원) ─────────────────────────
-KOSDAQ_FALLBACK = [
-    ("263750","펄어비스"), ("041510","에스엠"), ("035900","JYP Ent."),
-    ("122870","와이지엔터"), ("251270","넷마블"), ("293490","카카오게임즈"),
-    ("357780","솔브레인"), ("036570","엔씨소프트"), ("112040","위메이드"),
-    ("086520","에코프로"), ("247540","에코프로비엠"), ("352820","하이브"),
-    ("079550","LIG넥스원"), ("196170","알테오젠"), ("101490","에스앤에스텍"),
-    ("006280","녹십자"), ("039030","이오테크닉스"), ("095340","ISC"),
-    ("041960","블루오션"), ("166090","하나머티리얼즈"),
-]
 
-KOSPI_FALLBACK = [
-    ("005930","삼성전자"), ("000660","SK하이닉스"), ("207940","삼성바이오로직스"),
-    ("005380","현대차"), ("000270","기아"), ("068270","셀트리온"),
-    ("105560","KB금융"), ("055550","신한지주"), ("086790","하나금융지주"),
-    ("028260","삼성물산"), ("012330","현대모비스"), ("066570","LG전자"),
-    ("003550","LG"), ("017670","SK텔레콤"), ("030200","KT"),
-    ("015760","한국전력"), ("032830","삼성생명"), ("009150","삼성전기"),
-    ("034730","SK"), ("096770","SK이노베이션"),
-]
-
-# ── 업종코드 정의 (FHKUP03500100 기준) ───────────────────────────────
-# 출처: KIS 포탈 업종코드 표 / fid_input_iscd 값
-SECTOR_CODES = [
-    # KOSPI 업종
-    ("0001", "KOSPI종합"),
-    ("0002", "대형주"),
-    ("0003", "중형주"),
-    ("0004", "소형주"),
-    ("0006", "음식료품"),
-    ("0007", "섬유의복"),
-    ("0008", "종이목재"),
-    ("0009", "화학"),
-    ("0010", "의약품"),
-    ("0011", "비금속광물"),
-    ("0012", "철강금속"),
-    ("0014", "기계"),
-    ("0015", "전기전자"),
-    ("0016", "의료정밀"),
-    ("0017", "운수장비"),
-    ("0018", "유통업"),
-    ("0019", "전기가스업"),
-    ("0020", "건설업"),
-    ("0021", "운수창고"),
-    ("0022", "통신업"),
-    ("0023", "금융업"),
-    ("0024", "은행"),
-    ("0025", "증권"),
-    ("0026", "보험"),
-    ("0027", "서비스업"),
-    ("0028", "제조업"),
-    # KOSDAQ 업종
-    ("1001", "KOSDAQ종합"),
-    ("1028", "KOSDAQ중견기업부"),
-    ("1030", "IT부품"),
-    ("1031", "디지털컨텐츠"),
-    ("1032", "소프트웨어"),
-    ("1033", "IT H/W"),
-    ("1034", "반도체"),
-    ("1035", "비금속"),
-    ("1036", "금융"),
-    ("1037", "음식료·담배"),
-    ("1038", "섬유·의류"),
-    ("1040", "화학"),
-    ("1041", "제약"),
-    ("1042", "의료·정밀기기"),
-    ("1044", "건설"),
-    ("1045", "유통"),
-    ("1047", "통신방송서비스"),
-    ("1048", "IT서비스"),
-    ("1049", "문화서비스"),
-    ("1050", "기타서비스"),
-]
-
-# ── 유틸 ──────────────────────────────────────────────────────────────
-def safe_int(v, d=0):
-    try:
-        return int(str(v).replace(",", "").strip() or 0)
-    except:
-        return d
-
-def safe_float(v, d=0.0):
-    try:
-        f = float(str(v).replace(",", "").strip())
-        return d if (math.isnan(f) or math.isinf(f)) else f
-    except:
-        return d
-
-def clean_nan(obj):
-    if isinstance(obj, dict):  return {k: clean_nan(v) for k, v in obj.items()}
-    if isinstance(obj, list):  return [clean_nan(v) for v in obj]
-    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)): return 0.0
-    return obj
-
-def today_str():
-    return datetime.datetime.now(KST).strftime("%Y%m%d")
-
-def ndays_ago(n):
-    return (datetime.datetime.now(KST) - datetime.timedelta(days=n)).strftime("%Y%m%d")
-
-# ── 인증 ──────────────────────────────────────────────────────────────
 def get_token():
-    now = datetime.datetime.now(KST).timestamp()
-    if os.path.exists(TOKEN_FILE):
-        try:
-            c = json.load(open(TOKEN_FILE))
-            if "exp" in c and c["exp"] > now + 60:
-                return c["token"]
-        except:
-            pass
     r = requests.post(f"{BASE_URL}/oauth2/tokenP", json={
         "grant_type": "client_credentials",
-        "appkey": APP_KEY,
-        "appsecret": APP_SECRET,
+        "appkey":     APP_KEY,
+        "appsecret":  APP_SECRET,
     }, timeout=10)
-    r.raise_for_status()
-    data = r.json()
-    token = data["access_token"]
-    try:
-        exp_str = data.get("access_token_token_expired", "")
-        exp_ts = datetime.datetime.strptime(
-            exp_str, "%Y-%m-%d %H:%M:%S"
-        ).replace(tzinfo=KST).timestamp()
-    except:
-        exp_ts = now + 82800
-    os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
-    json.dump({"token": token, "exp": exp_ts}, open(TOKEN_FILE, "w"))
+    token = r.json()["access_token"]
+    print("[token] issued")
     return token
 
-def kis_get(path, params, tr_id, token):
-    r = requests.get(
-        BASE_URL + path,
-        headers={
-            "content-type": "application/json; charset=utf-8",
-            "authorization": f"Bearer {token}",
-            "appkey": APP_KEY,
-            "appsecret": APP_SECRET,
-            "tr_id": tr_id,
-            "custtype": "P",
-        },
-        params=params,
-        timeout=10
-    )
-    r.raise_for_status()
-    data = r.json()
-    if data.get("rt_cd", "") != "0":
-        raise Exception(f"KIS 오류: {data.get('msg1','').strip()} [{tr_id}]")
-    return data
 
-# ── 1. 지수 ── FHPUP02100000 ──────────────────────────────────────────
-# fid_cond_mrkt_div_code = "U" (업종/지수 전용, J 사용하면 에러!)
-# fid_input_iscd: 0001=KOSPI, 1001=KOSDAQ, 2001=KOSPI200
-def fetch_indices(token):
-    INDEX_CODES = [("0001", "KOSPI"), ("1001", "KOSDAQ"), ("2001", "KSP200")]
-    results = []
-    for iscd, name in INDEX_CODES:
-        try:
-            d = kis_get(
-                "/uapi/domestic-stock/v1/quotations/inquire-index-price",
-                {
-                    "fid_cond_mrkt_div_code": "U",
-                    "fid_input_iscd": iscd,
-                },
-                "FHPUP02100000",
-                token
-            )
-            o = d.get("output", {})
-            val  = safe_float(o.get("bstp_nmix_prpr", 0))
-            diff = safe_float(o.get("bstp_nmix_prdy_vrss", 0))
-            chg  = safe_float(o.get("bstp_nmix_prdy_ctrt", 0))
-            sign = o.get("prdy_vrss_sign", "3")
-            if sign in ("4", "5"):
-                diff = -abs(diff)
-                chg  = -abs(chg)
-            results.append({
-                "name":   name,
-                "iscd":   iscd,
-                "value":  val,
-                "diff":   diff,
-                "change": chg,
-                "vol":    safe_int(o.get("acml_vol", 0)),
-                "tr_amt": safe_int(o.get("acml_tr_pbmn", 0)),
-                "ascn":   safe_int(o.get("ascn_issu_cnt", 0)),
-                "down":   safe_int(o.get("down_issu_cnt", 0)),
-                "vol_fmt": f"{safe_int(o.get('acml_vol',0))/1e6:.0f}백만주",
-            })
-            print(f"  [{name}] {val:,.2f} ({chg:+.2f}%)")
-            time.sleep(0.3)
-        except Exception as e:
-            print(f"  지수 실패({name}): {e}")
-    return results
-
-# ── 2. 업종 시세 ── FHKUP03500100 ────────────────────────────────────
-# TR_ID : FHKUP03500100
-# URL   : /uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice
-# 파라미터 (공식 문서 기준 소문자):
-#   fid_cond_mrkt_div_code = "U"
-#   fid_input_iscd         = 업종코드 (0001, 0015, ...)
-#   fid_input_date_1       = 시작일 YYYYMMDD
-#   fid_input_date_2       = 종료일 YYYYMMDD
-#   fid_period_div_code    = "D" (일봉)
-# output1 (single): 당일 현재값
-#   bstp_nmix_prpr       - 업종 지수 현재가
-#   bstp_nmix_prdy_ctrt  - 전일 대비율
-#   acml_tr_pbmn         - 누적 거래 대금
-#   hts_kor_isnm         - 업종명
-#   prdy_vrss_sign       - 전일 대비 부호 (1상한 2상승 3보합 4하한 5하락)
-# output2 (array): 기간별 배열
-#   stck_bsop_date       - 날짜
-#   bstp_nmix_prpr       - 지수 종가
-#   acml_tr_pbmn         - 거래 대금
-def fetch_sectors(token, days=30):
-    results = []
-    end_date   = today_str()
-    start_date = ndays_ago(days + 10)  # 여유 있게
-
-    for iscd, fallback_name in SECTOR_CODES:
-        try:
-            d = kis_get(
-                "/uapi/domestic-stock/v1/quotations/inquire-daily-indexchartprice",
-                {
-                    "fid_cond_mrkt_div_code": "U",
-                    "fid_input_iscd":         iscd,
-                    "fid_input_date_1":       start_date,
-                    "fid_input_date_2":       end_date,
-                    "fid_period_div_code":    "D",
-                },
-                "FHKUP03500100",
-                token
-            )
-
-            # output1: 당일 현재값 (single object)
-            o1 = d.get("output1", {})
-            val = safe_float(o1.get("bstp_nmix_prpr", 0))
-            if val <= 0:
-                continue  # 데이터 없으면 skip
-
-            sign = o1.get("prdy_vrss_sign", "3")
-            chg  = safe_float(o1.get("bstp_nmix_prdy_ctrt", 0))
-            if sign in ("4", "5"):
-                chg = -abs(chg)
-
-            name     = o1.get("hts_kor_isnm", fallback_name).strip() or fallback_name
-            tr_amt   = safe_int(o1.get("acml_tr_pbmn", 0))
-            vol      = safe_int(o1.get("acml_vol", 0))
-            mkt_type = "KOSDAQ" if iscd.startswith("1") else "KOSPI"
-
-            # output2: 기간별 히스토리 (array) → 차트용
-            o2 = d.get("output2", [])
-            history = []
-            for row in sorted(o2, key=lambda x: x.get("stck_bsop_date", "")):
-                v = safe_float(row.get("bstp_nmix_prpr", 0))
-                if v > 0:
-                    history.append({
-                        "date":   row.get("stck_bsop_date", ""),
-                        "close":  v,
-                        "vol":    safe_int(row.get("acml_vol", 0)),
-                        "tr_amt": safe_int(row.get("acml_tr_pbmn", 0)),
-                    })
-
-            results.append({
-                "iscd":     iscd,
-                "name":     name,
-                "mkt_type": mkt_type,
-                "value":    val,
-                "change":   chg,
-                "tr_amt":   tr_amt,
-                "vol":      vol,
-                "history":  history[-days:],  # 최근 N일만
-            })
-            time.sleep(0.15)  # API 호출 간격 준수
-
-        except Exception as e:
-            # 없는 업종코드 또는 장마감 시 조용히 skip
-            pass
-
-    print(f"  섹터 {len(results)}개 수집 (KOSPI+KOSDAQ 업종)")
-    return results
-
-# ── 3. 거래량 순위 ── FHPST01710000 ────────────────────────────────────
-# KOSPI(J)만 지원. KOSDAQ(Q) → ERROR INVALID fid_cond_mrkt_div_code
-def fetch_top_volume_stocks(token, market="J", top_n=50):
-    if market != "J":
-        return _fetch_fallback(token, KOSDAQ_FALLBACK, "KOSDAQ")
-    stocks = []
-    try:
-        d = kis_get(
-            "/uapi/domestic-stock/v1/quotations/volume-rank",
-            {
-                "fid_cond_mrkt_div_code":  "J",
-                "fid_cond_scr_div_code":   "20171",
-                "fid_input_iscd":          "0000",
-                "fid_div_cls_code":        "0",
-                "fid_blng_cls_code":       "0",
-                "fid_trgt_cls_code":       "111111111",
-                "fid_trgt_exls_cls_code":  "000000",
-                "fid_input_price_1":       "",
-                "fid_input_price_2":       "",
-                "fid_vol_cnt":             "",
-                "fid_input_date_1":        "",
-            },
-            "FHPST01710000",
-            token
-        )
-        for r in (d.get("output", []))[:top_n]:
-            code  = r.get("mksc_shrn_iscd", "").strip()
-            price = safe_int(r.get("stck_prpr", 0))
-            if not code or not price:
-                continue
-            sign = r.get("prdy_vrss_sign", "3")
-            diff = safe_int(r.get("prdy_vrss", 0))
-            chg  = safe_float(r.get("prdy_ctrt", 0))
-            if sign in ("4", "5"):
-                diff = -abs(diff)
-                chg  = -abs(chg)
-            stocks.append({
-                "code":   code,
-                "name":   r.get("hts_kor_isnm", "").strip(),
-                "market": "KOSPI",
-                "price":  price,
-                "change": chg,
-                "diff":   diff,
-                "volume": safe_int(r.get("acml_vol", 0)),
-                "tr_val": safe_int(r.get("acml_tr_pbmn", 0)),
-                "high52": safe_int(r.get("w52_hgpr", 0)),
-                "low52":  safe_int(r.get("w52_lwpr", 0)),
-                "mktcap": safe_int(r.get("hts_avls", 0)),
-                "sector": r.get("bstp_kor_isnm", "").strip(),
-            })
-        print(f"  [KOSPI] 거래대금 상위 {len(stocks)}개")
-        time.sleep(0.5)
-    except Exception as e:
-        print(f"  거래량 순위 실패: {e}")
-        stocks = _fetch_fallback(token, KOSPI_FALLBACK, "KOSPI")
-    return stocks
-
-def _fetch_fallback(token, fallback_list, label):
-    """폴백: 고정 리스트로 현재가 개별 조회"""
-    stocks = []
-    for code, name in fallback_list[:20]:
-        try:
-            d = kis_get(
-                "/uapi/domestic-stock/v1/quotations/inquire-price",
-                {
-                    "fid_cond_mrkt_div_code": "J",
-                    "fid_input_iscd": code,
-                },
-                "FHKST01010100",
-                token
-            )
-            o = d.get("output", {})
-            price = safe_int(o.get("stck_prpr", 0))
-            if not price:
-                continue
-            sign = o.get("prdy_vrss_sign", "3")
-            diff = safe_int(o.get("prdy_vrss", 0))
-            chg  = safe_float(o.get("prdy_ctrt", 0))
-            if sign in ("4", "5"):
-                diff = -abs(diff)
-                chg  = -abs(chg)
-            stocks.append({
-                "code":   code,
-                "name":   o.get("hts_kor_isnm", name).strip() or name,
-                "market": label,
-                "price":  price,
-                "change": chg,
-                "diff":   diff,
-                "volume": safe_int(o.get("acml_vol", 0)),
-                "tr_val": safe_int(o.get("acml_tr_pbmn", 0)),
-                "high52": safe_int(o.get("w52_hgpr", 0)),
-                "low52":  safe_int(o.get("w52_lwpr", 0)),
-                "mktcap": safe_int(o.get("hts_avls", 0)),
-                "sector": o.get("bstp_kor_isnm", "").strip(),
-            })
-            time.sleep(0.12)
-        except Exception as e:
-            print(f"    {name} 실패: {e}")
-    print(f"  [{label}] 폴백 {len(stocks)}개")
-    return stocks
-
-# ── 4. 일봉 ── FHKST03010100 ──────────────────────────────────────────
-# output2 배열 사용 (output1은 당일 1건만)
-def fetch_ohlcv(code, token, days=60):
-    try:
-        d = kis_get(
-            "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
-            {
-                "fid_cond_mrkt_div_code": "J",
-                "fid_input_iscd":         code,
-                "fid_input_date_1":       ndays_ago(days + 30),
-                "fid_input_date_2":       today_str(),
-                "fid_period_div_code":    "D",
-                "fid_org_adj_prc":        "0",
-            },
-            "FHKST03010100",
-            token
-        )
-        rows = d.get("output2", [])
-        if not rows:
-            return pd.DataFrame()
-        df = pd.DataFrame(rows).rename(columns={
-            "stck_bsop_date": "date",
-            "stck_clpr":      "close",
-            "stck_oprc":      "open",
-            "stck_hgpr":      "high",
-            "stck_lwpr":      "low",
-            "acml_vol":       "volume",
-            "acml_tr_pbmn":   "tr_val",
-        })
-        for c in ["close", "open", "high", "low", "volume", "tr_val"]:
-            if c in df.columns:
-                df[c] = pd.to_numeric(
-                    df[c].astype(str).str.replace(",", ""), errors="coerce"
-                ).fillna(0)
-        return df.sort_values("date").tail(days).reset_index(drop=True)
-    except:
-        return pd.DataFrame()
-
-# ── 5. 투자자 ── FHKST01010900 ────────────────────────────────────────
-# output 배열 최근 30일
-# frgn_ntby_tr_pbmn 단위: 백만원 → 원 변환 시 × 1,000,000
-def fetch_stock_supply(code, token):
-    try:
-        d = kis_get(
-            "/uapi/domestic-stock/v1/quotations/inquire-investor",
-            {
-                "fid_cond_mrkt_div_code": "J",
-                "fid_input_iscd": code,
-            },
-            "FHKST01010900",
-            token
-        )
-        rows = d.get("output", [])
-        if not rows:
-            return pd.DataFrame()
-        df = pd.DataFrame(rows).rename(columns={
-            "stck_bsop_date":    "date",
-            "frgn_ntby_qty":     "frgn_qty",
-            "orgn_ntby_qty":     "orgn_qty",
-            "prsn_ntby_qty":     "prsn_qty",
-            "frgn_ntby_tr_pbmn": "frgn_amt",  # 백만원 단위
-            "orgn_ntby_tr_pbmn": "orgn_amt",
-            "prsn_ntby_tr_pbmn": "prsn_amt",
-        })
-        for c in ["frgn_qty", "orgn_qty", "prsn_qty", "frgn_amt", "orgn_amt", "prsn_amt"]:
-            if c in df.columns:
-                df[c] = pd.to_numeric(
-                    df[c].astype(str).str.replace(",", ""), errors="coerce"
-                ).fillna(0)
-        return df.sort_values("date").reset_index(drop=True)
-    except:
-        return pd.DataFrame()
-
-# ── 6. Phase 계산 ────────────────────────────────────────────────────
-def calc_consec(supply, col):
-    if supply.empty or col not in supply.columns:
-        return 0
-    cnt = 0
-    for v in supply[col].values[::-1]:
-        if v > 0:
-            cnt += 1
-        else:
-            break
-    return cnt
-
-def calc_phase(ohlcv, supply):
-    result = {
-        "phase": "", "phase_key": "",
-        "muges_ratio": 1.0, "smp": 0.0,
-        "vol_ratio": 1.0, "obv_above_ma": False,
-        "f_consec": 0, "i_consec": 0,
-        "foreign_today": 0, "inst_today": 0, "indiv_today": 0,
+def kis_get(path, params, tr_id, token, retry=2):
+    headers = {
+        "Content-Type":  "application/json",
+        "authorization": f"Bearer {token}",
+        "appkey":        APP_KEY,
+        "appsecret":     APP_SECRET,
+        "tr_id":         tr_id,
+        "custtype":      "P",
     }
-    if ohlcv.empty or len(ohlcv) < 10:
-        return result
+    for attempt in range(retry):
+        try:
+            r = requests.get(
+                f"{BASE_URL}{path}",
+                headers=headers,
+                params=params,
+                timeout=15
+            )
+            if not r.text or not r.text.strip():
+                return {}
+            d = r.json()
+            if d.get("rt_cd") == "0":
+                return d
+            code = d.get("msg_cd", "")
+            if code in ("EGW00201", "EGW00202"):
+                time.sleep(0.4)
+                continue
+            print(f"  API error [{tr_id}]: {d.get('msg1','')}")
+            return {}
+        except Exception as e:
+            print(f"  request failed [{tr_id}]: {e}")
+            time.sleep(0.5)
+    return {}
 
-    df = ohlcv.copy()
-    df["ma5"]      = df["close"].rolling(5).mean()
-    df["ma20"]     = df["close"].rolling(20).mean()
-    df["ma60"]     = df["close"].rolling(min(60, len(df))).mean()
-    df["dir"]      = np.sign(df["close"].diff().fillna(0))
-    df["obv"]      = (df["dir"] * df["volume"]).cumsum()
-    df["obv_ma20"] = df["obv"].rolling(20).mean()
 
-    t      = df.iloc[-1]
-    vol_ma = df["volume"].rolling(20).mean().iloc[-1] or 1
-    result["vol_ratio"]    = round(t["volume"] / vol_ma, 2)
-    result["obv_above_ma"] = bool(t["obv"] > safe_float(t.get("obv_ma20", 0)))
+def safe_float(v):
+    try:
+        return float(str(v).replace(",", ""))
+    except Exception:
+        return 0.0
 
-    if not supply.empty:
-        result["f_consec"] = calc_consec(supply, "frgn_qty")
-        result["i_consec"] = calc_consec(supply, "orgn_qty")
-        last = supply.iloc[-1]
-        # frgn_amt 단위: 백만원 → 원으로 변환
-        result["foreign_today"] = int(safe_float(last.get("frgn_amt", 0)) * 1_000_000)
-        result["inst_today"]    = int(safe_float(last.get("orgn_amt", 0)) * 1_000_000)
-        result["indiv_today"]   = int(safe_float(last.get("prsn_amt", 0)) * 1_000_000)
-        smp5 = supply.tail(5)["frgn_amt"].sum() + supply.tail(5)["orgn_amt"].sum()
-        tr5  = df.tail(5)["tr_val"].sum() / 1_000_000 or 1  # tr_val을 백만원 단위로 맞춤
-        result["smp"] = round(smp5 / tr5 * 100, 2)
 
-    fc, ic   = result["f_consec"], result["i_consec"]
-    vr, smp  = result["vol_ratio"], result["smp"]
-    obv_up   = result["obv_above_ma"]
-    ma5  = safe_float(t.get("ma5",  0))
-    ma20 = safe_float(t.get("ma20", 0))
-    ma60 = safe_float(t.get("ma60", 0))
+def safe_int(v):
+    try:
+        return int(float(str(v).replace(",", "")))
+    except Exception:
+        return 0
 
-    if fc >= 10 and ic >= 5 and obv_up and smp > 2 and ma5 > ma20 > ma60:
-        result.update({"phase": "⭐ GOLDEN 강한매집", "phase_key": "golden"})
-    elif (fc >= 3 or ic >= 3) and obv_up and smp > 0 and ma5 >= ma20:
-        ph = ("🟢 P2 거래량돌파" if vr >= 2.0
-              else "🟢 P2 수급가속" if smp > 1
-              else "🟢 P2 상승추세")
-        result.update({"phase": ph, "phase_key": "p2"})
-    elif (fc >= 2 or ic >= 2) and obv_up:
-        result.update({"phase": "🔵 P1 OBV매집", "phase_key": "p1"})
-    elif fc < 0 and ic < 0 and smp < -2:
-        result.update({"phase": "🔴 P3 손바뀜경고", "phase_key": "p3"})
 
+def clean_nan(obj):
+    if isinstance(obj, dict):
+        return {k: clean_nan(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean_nan(v) for v in obj]
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return 0
+    return obj
+
+
+# ----------------------------------------
+# 1. 지수
+# ----------------------------------------
+def fetch_indices(token):
+    INDICES = [
+        ("0001", "KOSPI",    "U"),
+        ("1001", "KOSDAQ",   "U"),
+        ("0002", "KOSPI200", "U"),
+    ]
+    results = []
+    for iscd, name, div in INDICES:
+        d = kis_get(
+            "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+            {"FID_COND_MRKT_DIV_CODE": div, "FID_INPUT_ISCD": iscd},
+            "FHPUP02100000", token
+        )
+        o = d.get("output", {})
+        if not o:
+            continue
+        results.append({
+            "name":   name,
+            "value":  safe_float(o.get("bstp_nmix_prpr", 0)),
+            "change": safe_float(o.get("bstp_nmix_prdy_ctrt", 0)),
+            "diff":   safe_float(o.get("bstp_nmix_prdy_vrss", 0)),
+            "ascn":   safe_int(o.get("ascn_issu_cnt", 0)),
+            "down":   safe_int(o.get("down_issu_cnt", 0)),
+            "tr_amt": safe_float(o.get("acml_tr_pbmn", 0)),
+        })
+        time.sleep(0.05)
+    print(f"  [index] {len(results)}")
+    return results
+
+
+# ----------------------------------------
+# 2. 섹터
+# ----------------------------------------
+KOSPI_SECTORS = [
+    ("1028","에너지"),("1029","소재"),("1030","산업재"),("1031","경기소비재"),
+    ("1032","필수소비재"),("1033","건강관리"),("1034","금융"),("1035","IT"),
+    ("1036","통신서비스"),("1037","유틸리티"),
+    ("0003","대형주"),("0004","중형주"),("0005","소형주"),
+]
+KOSDAQ_SECTORS = [
+    ("2005","IT"),("2006","제조"),("2007","건설"),("2008","유통"),("2009","운송"),
+    ("2010","금융"),("2011","오락문화"),("2012","통신방송"),("2013","인터넷"),
+    ("2014","디지털컨텐츠"),("2015","소프트웨어"),("2016","컴퓨터서비스"),
+    ("2017","통신장비"),("2018","IT부품"),("2019","반도체"),("2020","제약"),
+    ("2021","의료정밀기기"),("2022","음식료담배"),
+]
+
+
+def fetch_all_sectors(token):
+    sectors = []
+    targets = (
+        [(iscd, n, "KOSPI")  for iscd, n in KOSPI_SECTORS] +
+        [(iscd, n, "KOSDAQ") for iscd, n in KOSDAQ_SECTORS]
+    )
+    for iscd, name, mkt in targets:
+        d = kis_get(
+            "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+            {"FID_COND_MRKT_DIV_CODE": "U", "FID_INPUT_ISCD": iscd},
+            "FHPUP02100000", token
+        )
+        o = d.get("output", {})
+        val = safe_float(o.get("bstp_nmix_prpr", 0))
+        if not o or not val:
+            time.sleep(0.05)
+            continue
+        sectors.append({
+            "iscd":     iscd,
+            "name":     o.get("hts_kor_isnm", name),
+            "mkt_type": mkt,
+            "value":    val,
+            "change":   safe_float(o.get("bstp_nmix_prdy_ctrt", 0)),
+            "tr_amt":   safe_float(o.get("acml_tr_pbmn", 0)) / 1_000_000,
+            "history":  [],
+        })
+        time.sleep(0.06)
+    print(f"  [sector] {len(sectors)}")
+    return sectors
+
+
+# ----------------------------------------
+# 3. ★ 시총 1조 이상 전체 종목 스캔
+#    TR_ID: FHKST04010200 (시총순 정렬)
+#    FID_BLNG_CLS_CODE=0 전체, 시총순으로 페이지 수집
+# ----------------------------------------
+def fetch_large_cap_stocks(token, mkt_div, min_mktcap_billion=1000):
+    """
+    시총 기준 상위 종목 수집
+    min_mktcap_billion: 최소 시총 (억원 단위, 1000 = 1조)
+    FHKST04010200: 시장조건별 종목 순위 (시총순 정렬)
+    """
+    mkt_name = "KOSPI" if mkt_div == "J" else "KOSDAQ"
+
+    # 시총순 정렬로 종목 수집
+    params = {
+        "FID_COND_MRKT_DIV_CODE": mkt_div,
+        "FID_COND_SCR_DIV_CODE":  "20171",
+        "FID_INPUT_ISCD":         "0000",
+        "FID_DIV_CLS_CODE":       "0",
+        "FID_BLNG_CLS_CODE":      "0",
+        "FID_TRGT_CLS_CODE":      "111111111",
+        "FID_TRGT_EXLS_CLS_CODE": "000000",
+        "FID_INPUT_PRICE_1":      "",
+        "FID_INPUT_PRICE_2":      "",
+        "FID_VOL_CNT":            "",
+        "FID_INPUT_DATE_1":       "",
+    }
+
+    d = kis_get(
+        "/uapi/domestic-stock/v1/quotations/volume-rank",
+        params, "FHKST04010200", token
+    )
+
+    rows = d.get("output", [])
+    if not rows:
+        print(f"  [large cap] {mkt_name}: no data")
+        return []
+
+    results = []
+    for r in rows:
+        code   = r.get("mksc_shrn_iscd", "").strip()
+        price  = safe_int(r.get("stck_prpr", 0))
+        # 시가총액: data_rank API 결과에 없는 경우가 많아 일단 수집 후 상세에서 보완
+        if not code or not price:
+            continue
+        results.append({
+            "code":   code,
+            "name":   r.get("hts_kor_isnm", "").strip(),
+            "market": mkt_name,   # 나중에 종목기본정보로 덮어씀
+            "price":  price,
+            "change": safe_float(r.get("prdy_ctrt", 0)),
+            "diff":   safe_int(r.get("prdy_vrss", 0)),
+            "volume": safe_int(r.get("acml_vol", 0)),
+            "tr_val": safe_int(r.get("acml_tr_pbmn", 0)),
+            "sector": r.get("bstp_kor_isnm", "").strip(),
+            "high52": safe_int(r.get("d250_hgpr", 0)),
+            "low52":  safe_int(r.get("d250_lwpr", 0)),
+            "mktcap": 0,  # 상세에서 채움
+        })
+
+    print(f"  [large cap raw] {mkt_name} {len(results)}")
+    return results
+
+
+# ----------------------------------------
+# 4. ★ 종목 기본정보 조회
+#    TR_ID: FHKST01010100
+#    - 정확한 시장구분 (KOSPI/KOSDAQ)
+#    - 업종명
+#    - 시가총액
+# ----------------------------------------
+def fetch_stock_info(token, code):
+    """
+    종목 기본정보: 시장구분, 업종, 시가총액
+    TR_ID: FHKST01010100 (주식현재가 시세)
+    """
+    d = kis_get(
+        "/uapi/domestic-stock/v1/quotations/inquire-price",
+        {
+            "FID_COND_MRKT_DIV_CODE": "J",
+            "FID_INPUT_ISCD":         code,
+        },
+        "FHKST01010100", token
+    )
+    o = d.get("output", {})
+    if not o:
+        return {}
+
+    # 시장구분: bstp_kor_isnm 또는 rprs_mrkt_kor_name
+    mrkt_name = o.get("rprs_mrkt_kor_name", "")
+    if "코스닥" in mrkt_name or "KOSDAQ" in mrkt_name:
+        market = "KOSDAQ"
+    else:
+        market = "KOSPI"
+
+    # 시가총액 (억원 단위로 저장)
+    mktcap_str = o.get("hts_avls", "0")  # 시가총액 (억원)
+    mktcap = safe_float(mktcap_str)       # 억원
+
+    return {
+        "market": market,
+        "sector": o.get("bstp_kor_isnm", "").strip(),   # 업종명
+        "mktcap": mktcap,                                # 억원
+        "high52": safe_int(o.get("d250_hgpr", 0)),
+        "low52":  safe_int(o.get("d250_lwpr", 0)),
+        "per":    safe_float(o.get("per", 0)),
+        "pbr":    safe_float(o.get("pbr", 0)),
+    }
+
+
+# ----------------------------------------
+# 5. 투자자 매매동향 30일
+# ----------------------------------------
+def fetch_stock_investor_history(token, code, market="J"):
+    d = kis_get(
+        "/uapi/domestic-stock/v1/quotations/inquire-investor",
+        {"FID_COND_MRKT_DIV_CODE": market, "FID_INPUT_ISCD": code},
+        "FHKST01010900", token
+    )
+    rows = d.get("output", [])
+    result = []
+    for r in rows:
+        result.append({
+            "date":    r.get("stck_bsop_date", ""),
+            "foreign": safe_int(r.get("frgn_ntby_qty", 0)),
+            "inst":    safe_int(r.get("orgn_ntby_qty", 0)),
+            "indiv":   safe_int(r.get("prsn_ntby_qty", 0)),
+            "famt":    safe_float(r.get("frgn_ntby_tr_pbmn", 0)) * 1_000_000,
+            "iamt":    safe_float(r.get("orgn_ntby_tr_pbmn", 0)) * 1_000_000,
+            "pamt":    safe_float(r.get("prsn_ntby_tr_pbmn", 0)) * 1_000_000,
+        })
     return result
 
-def calc_supply_summary(supply):
-    if supply.empty:
-        return {"day": {}, "week": {}, "month": {}}
-    def sums(n):
-        t = supply.tail(n)
+
+def calc_supply_periods(investor_history):
+    def _sum(rows, n):
         return {
-            "foreign": int(t["frgn_amt"].sum() * 1_000_000),
-            "inst":    int(t["orgn_amt"].sum() * 1_000_000),
-            "indiv":   int(t["prsn_amt"].sum() * 1_000_000),
+            "foreign": sum(r.get("famt", 0) for r in rows[:n]),
+            "inst":    sum(r.get("iamt", 0) for r in rows[:n]),
+            "indiv":   sum(r.get("pamt", 0) for r in rows[:n]),
         }
-    return {"day": sums(1), "week": sums(5), "month": sums(22)}
+    return {
+        "day":   _sum(investor_history, 1),
+        "week":  _sum(investor_history, 5),
+        "month": _sum(investor_history, 20),
+    }
 
-def calc_nh(s):
-    price, h52 = s.get("price", 0), s.get("high52", 0)
-    if not price or not h52:
-        return "", 0
-    r = round(price / h52 * 100, 1)
-    if r >= 100: return "📍 52주 신고가!", r
-    if r >= 97:  return "📍 신고가 근접", r
-    return "", r
 
-# ── 요약 문장 ─────────────────────────────────────────────────────────
-def make_summary(indices, stocks, ms, ps):
-    def fmt_b(n):
-        s = "+" if n >= 0 else "-"
-        a = abs(n)
-        if a >= 1e12: return f"{s}{a/1e12:.1f}조"
-        if a >= 1e8:  return f"{s}{a/1e8:.0f}억"
-        return f"{s}{a/1e4:.0f}만"
+# ----------------------------------------
+# 6. Phase 판정
+# ----------------------------------------
+def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
+    if nh_flag and f_consec >= 3 and smp > 0:
+        return "golden", "GOLDEN - 신고가+외인매집"
+    if f_consec >= 5 and i_consec >= 3 and smp > 1:
+        return "golden", "GOLDEN - 강한 매집"
+    if smp < -2 and f_consec == 0:
+        return "p3", "P3 - 기관외인 이탈"
+    if f_consec >= 3 and smp > 0 and obv_up:
+        return "p2", "P2 - 상승 추세"
+    if f_consec >= 2 or i_consec >= 2:
+        return "p1", "P1 - 매집 초기"
+    return "", ""
 
+
+# ----------------------------------------
+# 7. ★ 종목 상세 수집 (기본정보 + 투자자)
+# ----------------------------------------
+def fetch_stock_detail(token, stock, min_mktcap_billion=1000):
+    """
+    1. 종목기본정보 → 정확한 시장/업종/시가총액
+    2. 투자자 30일 → 수급/Phase
+    3. 시총 필터: min_mktcap_billion 억 미만이면 None 반환
+    """
+    code = stock["code"]
+
+    # Step 1: 종목 기본정보 (시장/업종/시총 정확히)
+    info = fetch_stock_info(token, code)
+    time.sleep(0.07)
+
+    if info:
+        stock["market"] = info["market"]          # 정확한 시장 덮어쓰기
+        stock["sector"] = info.get("sector") or stock.get("sector", "")
+        stock["mktcap"] = info.get("mktcap", 0)  # 억원
+        if info.get("high52"):
+            stock["high52"] = info["high52"]
+        if info.get("low52"):
+            stock["low52"]  = info["low52"]
+        stock["per"] = info.get("per", 0)
+        stock["pbr"] = info.get("pbr", 0)
+
+    # 시총 필터 (1조 = 10000억)
+    mktcap = stock.get("mktcap", 0)
+    if mktcap > 0 and mktcap < min_mktcap_billion:
+        return None  # 필터 아웃
+
+    # Step 2: 투자자 30일 히스토리
+    market_code = "J" if stock["market"] == "KOSPI" else "Q"
+    inv_hist = fetch_stock_investor_history(token, code, market_code)
+    time.sleep(0.07)
+
+    today_row     = inv_hist[0] if inv_hist else {}
+    foreign_today = today_row.get("famt", 0)
+    inst_today    = today_row.get("iamt", 0)
+    indiv_today   = today_row.get("pamt", 0)
+
+    supply_periods = calc_supply_periods(inv_hist)
+
+    f_consec = 0
+    for row in inv_hist:
+        if row.get("foreign", 0) > 0:
+            f_consec += 1
+        else:
+            break
+
+    i_consec = 0
+    for row in inv_hist:
+        if row.get("inst", 0) > 0:
+            i_consec += 1
+        else:
+            break
+
+    high52   = stock.get("high52", 0)
+    low52    = stock.get("low52",  0)
+    price    = stock.get("price",  0)
+    nh_ratio = round(price / high52 * 100, 1) if high52 else 0
+
+    nh_flag = ""
+    if nh_ratio >= 100:
+        nh_flag = "신고가"
+    elif nh_ratio >= 99:
+        nh_flag = "99%"
+    elif nh_ratio >= 97:
+        nh_flag = "97%+"
+
+    tr_val = stock.get("tr_val", 1) or 1
+    smp    = round((foreign_today + inst_today) / tr_val * 100, 2)
+    obv_up = (foreign_today + inst_today) > 0
+
+    phase_key, phase = determine_phase(f_consec, i_consec, smp, nh_flag, obv_up)
+
+    stock.update({
+        "foreign_today":  foreign_today,
+        "inst_today":     inst_today,
+        "indiv_today":    indiv_today,
+        "supply_periods": supply_periods,
+        "f_consec":       f_consec,
+        "i_consec":       i_consec,
+        "high52":         high52,
+        "low52":          low52,
+        "nh_ratio":       nh_ratio,
+        "nh_flag":        nh_flag,
+        "smp":            smp,
+        "obv_above_ma":   obv_up,
+        "vol_ratio":      1.0,
+        "phase_key":      phase_key,
+        "phase":          phase,
+    })
+    return stock
+
+
+# ----------------------------------------
+# 8. 집계
+# ----------------------------------------
+def calc_market_supply(stocks):
+    return {
+        "foreign_net": sum(s.get("foreign_today", 0) for s in stocks),
+        "inst_net":    sum(s.get("inst_today",    0) for s in stocks),
+        "indiv_net":   sum(s.get("indiv_today",   0) for s in stocks),
+    }
+
+
+def build_summary(indices, stocks, market_supply, phase_stats):
     lines = []
     for idx in indices[:2]:
-        sign = "▲" if idx["change"] >= 0 else "▼"
-        lines.append(
-            f"📊 {idx['name']} {idx['value']:,.2f} "
-            f"({sign}{abs(idx['change']):.2f}%) "
-            f"· 상승{idx.get('ascn',0)} 하락{idx.get('down',0)}"
-        )
+        sym = "+" if idx["change"] >= 0 else ""
+        lines.append(f"{idx['name']} {sym}{idx['change']:.2f}% ({idx['value']:,.0f})")
 
-    fn   = ms.get("foreign_net", 0)
-    inst = ms.get("inst_net",    0)
-    indiv= ms.get("indiv_net",   0)
-    if any([fn, inst, indiv]):
-        lines.append(
-            f"💰 외국인 {fmt_b(fn)} · 기관 {fmt_b(inst)} · 개인 {fmt_b(indiv)}"
-        )
+    fn  = market_supply.get("foreign_net", 0)
+    inn = market_supply.get("inst_net",    0)
+    iv  = market_supply.get("indiv_net",   0)
 
-    parts = []
-    if ps.get("golden"):   parts.append(f"⭐GOLDEN {ps['golden']}개")
-    if ps.get("p2"):       parts.append(f"🟢P2 {ps['p2']}개")
-    if ps.get("p1"):       parts.append(f"🔵P1매집 {ps['p1']}개")
-    if ps.get("p3"):       parts.append(f"🔴P3경고 {ps['p3']}개")
-    if ps.get("new_high"): parts.append(f"🚀신고가 {ps['new_high']}개")
-    if parts:
-        lines.append("📡 신호: " + " · ".join(parts))
+    def amt_str(v):
+        a = abs(v)
+        s = f"{a/1e8:.0f}억" if a >= 1e8 else f"{a/1e4:.0f}만"
+        return ("+" if v >= 0 else "-") + s
 
-    top5 = sorted(stocks, key=lambda s: abs(s.get("tr_val", 0)), reverse=True)[:5]
-    if top5:
-        lines.append("🔥 거래대금 상위: " + ", ".join(
-            f"{s['name']}({'+' if s['change']>=0 else ''}{s['change']:.1f}%)"
-            for s in top5
-        ))
+    lines.append(f"외국인 {amt_str(fn)} / 기관 {amt_str(inn)} / 개인 {amt_str(iv)}")
+
+    if phase_stats.get("golden"):
+        lines.append(f"GOLDEN {phase_stats['golden']}개 / P1매집 {phase_stats.get('p1', 0)}개")
+
+    nh = [s for s in stocks if s.get("nh_flag")]
+    if nh:
+        lines.append(f"신고가 근접 {len(nh)}종목 / 대표: {nh[0]['name']}")
+
     return lines
 
-# ── 메인 ─────────────────────────────────────────────────────────────
+
+# ----------------------------------------
+# MAIN
+# ----------------------------------------
 def main():
-    now = datetime.datetime.now(KST)
-    print("=" * 55)
-    print(f"📡 수집 시작: {now.strftime('%Y-%m-%d %H:%M')} KST")
-    print("=" * 55)
-
     token = get_token()
-    print("✅ 토큰 OK")
 
-    # 1. 지수
-    print("\n📊 지수 수집...")
+    print("\n[1] index...")
     indices = fetch_indices(token)
+    time.sleep(0.3)
 
-    # 2. 섹터 (FHKUP03500100)
-    print("\n🏭 섹터 수집...")
-    sectors = fetch_sectors(token, days=30)
+    print("\n[2] sector...")
+    sectors = fetch_all_sectors(token)
+    time.sleep(0.3)
 
-    # 3. 전체 시장 스캔
-    print("\n🔍 전체 시장 스캔...")
-    kospi  = fetch_top_volume_stocks(token, "J", 50)
-    kosdaq = fetch_top_volume_stocks(token, "Q", 20)
+    # ----------------------------------------
+    # 종목 수집: 거래대금 상위 (KOSPI 100 + KOSDAQ 50)
+    # + 시총 1조 이상 필터는 상세 수집 단계에서 적용
+    # ----------------------------------------
+    print("\n[3] large cap stock list...")
+    kospi_stocks  = fetch_large_cap_stocks(token, "J")
+    time.sleep(0.25)
+    kosdaq_stocks = fetch_large_cap_stocks(token, "Q")
+    time.sleep(0.3)
 
+    # 중복 제거 (거래대금 내림차순 우선)
+    all_raw = kospi_stocks + kosdaq_stocks
     seen, unique = set(), []
-    for s in sorted(kospi + kosdaq, key=lambda x: x.get("tr_val", 0), reverse=True):
+    for s in sorted(all_raw, key=lambda x: x.get("tr_val", 0), reverse=True):
         if s["code"] not in seen and s["price"] > 0:
             seen.add(s["code"])
             unique.append(s)
-    print(f"\n  → 총 {len(unique)}개 종목 (상위 50개 상세분석)")
+    print(f"  raw unique: {len(unique)}")
 
-    # 4. 상세 분석
-    print("\n📈 상세 분석...")
+    # ----------------------------------------
+    # 종목 상세: 기본정보(시장/업종/시총) + 투자자(수급/Phase)
+    # 시총 1조 미만은 자동 제외
+    # ----------------------------------------
+    print("\n[4] stock detail (info + investor + phase)...")
+    MIN_MKTCAP = 10000   # 1조 = 10000억
+    MAX_STOCKS = 200     # 최대 처리 수 (API 부하 고려)
+
     stocks = []
-    for i, s in enumerate(unique[:50]):
-        code, name = s["code"], s["name"]
-        try:
-            ohlcv  = fetch_ohlcv(code, token, 60)
-            time.sleep(0.1)
-            supply = fetch_stock_supply(code, token)
-            time.sleep(0.1)
-            s.update(calc_phase(ohlcv, supply))
-            s["supply_periods"] = calc_supply_summary(supply)
-            nh_flag, nh_ratio   = calc_nh(s)
-            s["nh_flag"]  = nh_flag
-            s["nh_ratio"] = nh_ratio
-            print(f"  [{i+1:2d}/50] {name} → {s.get('phase','') or '신호없음'} {nh_flag}")
-        except Exception as e:
-            print(f"  [{i+1}] {name} 실패: {e}")
-        stocks.append(s)
+    filtered_out = 0
 
-    # 5. 통계
-    ps = {
+    for i, stock in enumerate(unique[:MAX_STOCKS]):
+        try:
+            s = fetch_stock_detail(token, stock, min_mktcap_billion=MIN_MKTCAP)
+            if s is None:
+                filtered_out += 1
+            else:
+                stocks.append(s)
+            time.sleep(0.08)
+            if (i + 1) % 20 == 0:
+                kept = len(stocks)
+                print(f"  ... {i+1}/{min(len(unique), MAX_STOCKS)} | kept:{kept} filtered:{filtered_out}")
+        except Exception as e:
+            print(f"  failed {stock.get('name', '?')}: {e}")
+
+    print(f"  detail done: {len(stocks)} (filtered out: {filtered_out})")
+
+    # ----------------------------------------
+    # 집계
+    # ----------------------------------------
+    market_supply = calc_market_supply(stocks)
+    phase_stats   = {
         "golden":   sum(1 for s in stocks if s.get("phase_key") == "golden"),
         "p2":       sum(1 for s in stocks if s.get("phase_key") == "p2"),
         "p1":       sum(1 for s in stocks if s.get("phase_key") == "p1"),
         "p3":       sum(1 for s in stocks if s.get("phase_key") == "p3"),
         "new_high": sum(1 for s in stocks if s.get("nh_flag")),
     }
-    ms = {
-        "foreign_net": sum(s.get("foreign_today", 0) for s in stocks),
-        "inst_net":    sum(s.get("inst_today",    0) for s in stocks),
-        "indiv_net":   sum(s.get("indiv_today",   0) for s in stocks),
-    }
-    summary = make_summary(indices, stocks, ms, ps)
 
-    # 6. JSON 저장
+    def top_by(lst, key, n=20, reverse=True):
+        return sorted(
+            [s for s in lst if s.get(key, 0) != 0],
+            key=lambda x: x.get(key, 0),
+            reverse=reverse
+        )[:n]
+
+    top_traders = {
+        "foreign_buy":  top_by(stocks, "foreign_today", 20, True),
+        "foreign_sell": top_by(stocks, "foreign_today", 20, False),
+        "inst_buy":     top_by(stocks, "inst_today",    20, True),
+        "inst_sell":    top_by(stocks, "inst_today",    20, False),
+    }
+
+    summary_lines = build_summary(indices, stocks, market_supply, phase_stats)
+    now_str       = datetime.now().strftime("%Y-%m-%d %H:%M")
+
     payload = clean_nan({
-        "date":          now.strftime("%Y-%m-%d"),
-        "updated_at":    now.strftime("%Y-%m-%d %H:%M"),
+        "updated_at":    now_str,
+        "date":          datetime.now().strftime("%Y-%m-%d"),
         "indices":       indices,
-        "sectors":       sectors,       # ← 섹터 추가
-        "market_supply": ms,
+        "sectors":       sectors,
         "stocks":        stocks,
-        "phase_stats":   ps,
-        "summary_lines": summary,
+        "top_traders":   top_traders,
+        "market_supply": market_supply,
+        "phase_stats":   phase_stats,
+        "summary_lines": summary_lines,
     })
 
     os.makedirs("data", exist_ok=True)
     with open("data/market.json", "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    print(
-        f"\n✅ 완료! "
-        f"지수{len(indices)} | 섹터{len(sectors)} | 종목{len(stocks)} | "
-        f"GOLDEN{ps['golden']} P2{ps['p2']} P1{ps['p1']} P3{ps['p3']} 신고가{ps['new_high']}"
-    )
+    print(f"\ndone: data/market.json")
+    print(f"  index:{len(indices)} sector:{len(sectors)} stock:{len(stocks)}")
+    print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P3={phase_stats['p3']}")
+
 
 if __name__ == "__main__":
     main()
