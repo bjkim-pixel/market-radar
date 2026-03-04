@@ -1,15 +1,15 @@
 {
   "date": "2026-03-04",
-  "updated_at": "2026-03-04 14:12",
+  "updated_at": "2026-03-04 14:15",
   "indices": [
     {
       "name": "KOSPI",
       "iscd": "0001",
-      "value": 5239.91,
-      "diff": -552.0,
-      "change": -9.53,
-      "vol": 1365076,
-      "tr_amt": 52642576,
+      "value": 5220.84,
+      "diff": -571.07,
+      "change": -9.86,
+      "vol": 1370873,
+      "tr_amt": 52839612,
       "ascn": 14,
       "down": 908,
       "vol_fmt": "1백만주"
@@ -17,23 +17,23 @@
     {
       "name": "KOSDAQ",
       "iscd": "1001",
-      "value": 1006.27,
-      "diff": -131.43,
-      "change": -11.55,
-      "vol": 1229490,
-      "tr_amt": 13968442,
+      "value": 1002.53,
+      "diff": -135.17,
+      "change": -11.88,
+      "vol": 1236743,
+      "tr_amt": 14037879,
       "ascn": 38,
-      "down": 1698,
+      "down": 1699,
       "vol_fmt": "1백만주"
     },
     {
       "name": "KSP200",
       "iscd": "2001",
-      "value": 778.21,
-      "diff": -81.19,
-      "change": -9.45,
-      "vol": 368528,
-      "tr_amt": 46139884,
+      "value": 776.57,
+      "diff": -82.83,
+      "change": -9.64,
+      "vol": 369793,
+      "tr_amt": 46305103,
       "ascn": 1,
       "down": 199,
       "vol_fmt": "0백만주"
@@ -44,10 +44,10 @@
       "iscd": "0001",
       "name": "종합",
       "mkt_type": "KOSPI",
-      "value": 5239.91,
-      "change": -9.53,
-      "tr_amt": 52642576,
-      "vol": 1365076,
+      "value": 5220.84,
+      "change": -9.86,
+      "tr_amt": 52839612,
+      "vol": 1370873,
       "history": [
         {
           "date": "20260123",
@@ -195,9 +195,9 @@
         },
         {
           "date": "20260304",
-          "close": 5239.91,
-          "vol": 1365076,
-          "tr_amt": 52642576
+          "close": 5220.84,
+          "vol": 1370873,
+          "tr_amt": 52839612
         }
       ]
     },
@@ -205,10 +205,10 @@
       "iscd": "0002",
       "name": "대형주",
       "mkt_type": "KOSPI",
-      "value": 5574.62,
-      "change": -9.47,
-      "tr_amt": 43458228,
-      "vol": 254507,
+      "value": 5553.66,
+      "change": -9.81,
+      "tr_amt": 43612540,
+      "vol": 255431,
       "history": [
         {
           "date": "20260123",
@@ -356,9 +356,9 @@
         },
         {
           "date": "20260304",
-          "close": 5574.62,
-          "vol": 254507,
-          "tr_amt": 43458228
+          "close": 5553.66,
+          "vol": 255431,
+          "tr_amt": 43612540
         }
       ]
     },
@@ -366,10 +366,10 @@
       "iscd": "0003",
       "name": "중형주",
       "mkt_type": "KOSPI",
-      "value": 3979.39,
-      "change": -10.47,
-      "tr_amt": 4141134,
-      "vol": 293552,
+      "value": 3966.89,
+      "change": -10.75,
+      "tr_amt": 4161806,
+      "vol": 294475,
       "history": [
         {
           "date": "20260123",
@@ -517,9 +517,9 @@
         },
         {
           "date": "20260304",
-          "close": 3979.39,
-          "vol": 293552,
-          "tr_amt": 4141134
+          "close": 3966.89,
+          "vol": 294475,
+          "tr_amt": 4161806
         }
       ]
     },
@@ -527,10 +527,10 @@
       "iscd": "0004",
       "name": "소형주",
       "mkt_type": "KOSPI",
-      "value": 2558.65,
-      "change": -8.29,
-      "tr_amt": 3026424,
-      "vol": 766778,
+      "value": 2555.6,
+      "change": -8.4,
+      "tr_amt": 3041155,
+      "vol": 770790,
       "history": [
         {
           "date": "20260123",
@@ -678,9 +678,9 @@
         },
         {
           "date": "20260304",
-          "close": 2558.65,
-          "vol": 766778,
-          "tr_amt": 3026424
+          "close": 2555.6,
+          "vol": 770790,
+          "tr_amt": 3041155
         }
       ]
     },
@@ -688,10 +688,10 @@
       "iscd": "0006",
       "name": "섬유·의류",
       "mkt_type": "KOSPI",
-      "value": 235.77,
-      "change": -8.09,
-      "tr_amt": 36547,
-      "vol": 10754,
+      "value": 235.83,
+      "change": -8.06,
+      "tr_amt": 36775,
+      "vol": 10792,
       "history": [
         {
           "date": "20260123",
@@ -839,9 +839,9 @@
         },
         {
           "date": "20260304",
-          "close": 235.77,
-          "vol": 10754,
-          "tr_amt": 36547
+          "close": 235.83,
+          "vol": 10792,
+          "tr_amt": 36775
         }
       ]
     },
@@ -849,10 +849,10 @@
       "iscd": "0007",
       "name": "종이·목재",
       "mkt_type": "KOSPI",
-      "value": 268.19,
-      "change": -8.34,
-      "tr_amt": 17111,
-      "vol": 7421,
+      "value": 268.26,
+      "change": -8.32,
+      "tr_amt": 17240,
+      "vol": 7456,
       "history": [
         {
           "date": "20260123",
@@ -1000,9 +1000,9 @@
         },
         {
           "date": "20260304",
-          "close": 268.19,
-          "vol": 7421,
-          "tr_amt": 17111
+          "close": 268.26,
+          "vol": 7456,
+          "tr_amt": 17240
         }
       ]
     },
@@ -1010,10 +1010,10 @@
       "iscd": "0008",
       "name": "화학",
       "mkt_type": "KOSPI",
-      "value": 4586.47,
-      "change": -10.26,
-      "tr_amt": 3131681,
-      "vol": 123883,
+      "value": 4580.16,
+      "change": -10.38,
+      "tr_amt": 3142233,
+      "vol": 124246,
       "history": [
         {
           "date": "20260123",
@@ -1161,9 +1161,9 @@
         },
         {
           "date": "20260304",
-          "close": 4586.47,
-          "vol": 123883,
-          "tr_amt": 3131681
+          "close": 4580.16,
+          "vol": 124246,
+          "tr_amt": 3142233
         }
       ]
     },
@@ -1171,10 +1171,10 @@
       "iscd": "0009",
       "name": "제약",
       "mkt_type": "KOSPI",
-      "value": 16815.85,
-      "change": -9.62,
-      "tr_amt": 680251,
-      "vol": 25481,
+      "value": 16800.23,
+      "change": -9.7,
+      "tr_amt": 683540,
+      "vol": 25574,
       "history": [
         {
           "date": "20260123",
@@ -1322,9 +1322,9 @@
         },
         {
           "date": "20260304",
-          "close": 16815.85,
-          "vol": 25481,
-          "tr_amt": 680251
+          "close": 16800.23,
+          "vol": 25574,
+          "tr_amt": 683540
         }
       ]
     },
@@ -1332,10 +1332,10 @@
       "iscd": "0010",
       "name": "비금속",
       "mkt_type": "KOSPI",
-      "value": 4200.15,
-      "change": -4.43,
-      "tr_amt": 227156,
-      "vol": 13931,
+      "value": 4198.32,
+      "change": -4.47,
+      "tr_amt": 227346,
+      "vol": 13952,
       "history": [
         {
           "date": "20260123",
@@ -1483,9 +1483,9 @@
         },
         {
           "date": "20260304",
-          "close": 4200.15,
-          "vol": 13931,
-          "tr_amt": 227156
+          "close": 4198.32,
+          "vol": 13952,
+          "tr_amt": 227346
         }
       ]
     },
@@ -1493,10 +1493,10 @@
       "iscd": "0011",
       "name": "금속",
       "mkt_type": "KOSPI",
-      "value": 7813.73,
-      "change": -11.12,
-      "tr_amt": 2474896,
-      "vol": 94276,
+      "value": 7775.0,
+      "change": -11.56,
+      "tr_amt": 2484849,
+      "vol": 94518,
       "history": [
         {
           "date": "20260123",
@@ -1644,9 +1644,9 @@
         },
         {
           "date": "20260304",
-          "close": 7813.73,
-          "vol": 94276,
-          "tr_amt": 2474896
+          "close": 7775.0,
+          "vol": 94518,
+          "tr_amt": 2484849
         }
       ]
     },
@@ -1654,10 +1654,10 @@
       "iscd": "0012",
       "name": "기계·장비",
       "mkt_type": "KOSPI",
-      "value": 3284.75,
-      "change": -11.72,
-      "tr_amt": 2640967,
-      "vol": 53464,
+      "value": 3277.78,
+      "change": -11.91,
+      "tr_amt": 2650670,
+      "vol": 53632,
       "history": [
         {
           "date": "20260123",
@@ -1805,9 +1805,9 @@
         },
         {
           "date": "20260304",
-          "close": 3284.75,
-          "vol": 53464,
-          "tr_amt": 2640967
+          "close": 3277.78,
+          "vol": 53632,
+          "tr_amt": 2650670
         }
       ]
     },
@@ -1815,10 +1815,10 @@
       "iscd": "0014",
       "name": "의료·정밀기기",
       "mkt_type": "KOSPI",
-      "value": 1446.78,
-      "change": -11.47,
-      "tr_amt": 55390,
-      "vol": 2794,
+      "value": 1443.24,
+      "change": -11.69,
+      "tr_amt": 55597,
+      "vol": 2808,
       "history": [
         {
           "date": "20260123",
@@ -1966,9 +1966,9 @@
         },
         {
           "date": "20260304",
-          "close": 1446.78,
-          "vol": 2794,
-          "tr_amt": 55390
+          "close": 1443.24,
+          "vol": 2808,
+          "tr_amt": 55597
         }
       ]
     },
@@ -1976,10 +1976,10 @@
       "iscd": "0015",
       "name": "운송장비·부품",
       "mkt_type": "KOSPI",
-      "value": 5999.82,
-      "change": -12.53,
-      "tr_amt": 6693811,
-      "vol": 53188,
+      "value": 5987.41,
+      "change": -12.71,
+      "tr_amt": 6718630,
+      "vol": 53370,
       "history": [
         {
           "date": "20260123",
@@ -2127,9 +2127,9 @@
         },
         {
           "date": "20260304",
-          "close": 5999.82,
-          "vol": 53188,
-          "tr_amt": 6693811
+          "close": 5987.41,
+          "vol": 53370,
+          "tr_amt": 6718630
         }
       ]
     },
@@ -2137,10 +2137,10 @@
       "iscd": "0016",
       "name": "유통",
       "mkt_type": "KOSPI",
-      "value": 540.62,
-      "change": -11.09,
-      "tr_amt": 955311,
-      "vol": 78783,
+      "value": 540.34,
+      "change": -11.14,
+      "tr_amt": 960457,
+      "vol": 78974,
       "history": [
         {
           "date": "20260123",
@@ -2288,9 +2288,9 @@
         },
         {
           "date": "20260304",
-          "close": 540.62,
-          "vol": 78783,
-          "tr_amt": 955311
+          "close": 540.34,
+          "vol": 78974,
+          "tr_amt": 960457
         }
       ]
     },
@@ -2298,10 +2298,10 @@
       "iscd": "0017",
       "name": "전기·가스",
       "mkt_type": "KOSPI",
-      "value": 1375.27,
-      "change": -8.91,
-      "tr_amt": 536299,
-      "vol": 19453,
+      "value": 1377.87,
+      "change": -8.74,
+      "tr_amt": 537738,
+      "vol": 19486,
       "history": [
         {
           "date": "20260123",
@@ -2449,9 +2449,9 @@
         },
         {
           "date": "20260304",
-          "close": 1375.27,
-          "vol": 19453,
-          "tr_amt": 536299
+          "close": 1377.87,
+          "vol": 19486,
+          "tr_amt": 537738
         }
       ]
     },
@@ -2459,10 +2459,10 @@
       "iscd": "0018",
       "name": "건설",
       "mkt_type": "KOSPI",
-      "value": 134.83,
-      "change": -12.97,
-      "tr_amt": 598242,
-      "vol": 31264,
+      "value": 135.16,
+      "change": -12.75,
+      "tr_amt": 600624,
+      "vol": 31399,
       "history": [
         {
           "date": "20260123",
@@ -2610,9 +2610,9 @@
         },
         {
           "date": "20260304",
-          "close": 134.83,
-          "vol": 31264,
-          "tr_amt": 598242
+          "close": 135.16,
+          "vol": 31399,
+          "tr_amt": 600624
         }
       ]
     },
@@ -2620,10 +2620,10 @@
       "iscd": "0019",
       "name": "운송·창고",
       "mkt_type": "KOSPI",
-      "value": 2061.52,
-      "change": -12.12,
-      "tr_amt": 1350839,
-      "vol": 342872,
+      "value": 2068.18,
+      "change": -11.83,
+      "tr_amt": 1359222,
+      "vol": 344956,
       "history": [
         {
           "date": "20260123",
@@ -2771,9 +2771,9 @@
         },
         {
           "date": "20260304",
-          "close": 2061.52,
-          "vol": 342872,
-          "tr_amt": 1350839
+          "close": 2068.18,
+          "vol": 344956,
+          "tr_amt": 1359222
         }
       ]
     },
@@ -2781,10 +2781,10 @@
       "iscd": "0020",
       "name": "통신",
       "mkt_type": "KOSPI",
-      "value": 563.83,
-      "change": -9.19,
-      "tr_amt": 165261,
-      "vol": 4377,
+      "value": 562.14,
+      "change": -9.47,
+      "tr_amt": 165982,
+      "vol": 4403,
       "history": [
         {
           "date": "20260123",
@@ -2932,9 +2932,9 @@
         },
         {
           "date": "20260304",
-          "close": 563.83,
-          "vol": 4377,
-          "tr_amt": 165261
+          "close": 562.14,
+          "vol": 4403,
+          "tr_amt": 165982
         }
       ]
     },
@@ -2942,10 +2942,10 @@
       "iscd": "0021",
       "name": "금융",
       "mkt_type": "KOSPI",
-      "value": 929.4,
-      "change": -9.58,
-      "tr_amt": 4071764,
-      "vol": 159036,
+      "value": 930.05,
+      "change": -9.52,
+      "tr_amt": 4093000,
+      "vol": 159707,
       "history": [
         {
           "date": "20260123",
@@ -3093,9 +3093,9 @@
         },
         {
           "date": "20260304",
-          "close": 929.4,
-          "vol": 159036,
-          "tr_amt": 4071764
+          "close": 930.05,
+          "vol": 159707,
+          "tr_amt": 4093000
         }
       ]
     },
@@ -3103,10 +3103,10 @@
       "iscd": "0024",
       "name": "증권",
       "mkt_type": "KOSPI",
-      "value": 7007.05,
-      "change": -11.35,
-      "tr_amt": 948181,
-      "vol": 91787,
+      "value": 7005.65,
+      "change": -11.37,
+      "tr_amt": 951607,
+      "vol": 92153,
       "history": [
         {
           "date": "20260123",
@@ -3254,9 +3254,9 @@
         },
         {
           "date": "20260304",
-          "close": 7007.05,
-          "vol": 91787,
-          "tr_amt": 948181
+          "close": 7005.65,
+          "vol": 92153,
+          "tr_amt": 951607
         }
       ]
     },
@@ -3264,10 +3264,10 @@
       "iscd": "0025",
       "name": "보험",
       "mkt_type": "KOSPI",
-      "value": 35442.73,
-      "change": -8.33,
-      "tr_amt": 359092,
-      "vol": 24269,
+      "value": 35454.78,
+      "change": -8.3,
+      "tr_amt": 360988,
+      "vol": 24346,
       "history": [
         {
           "date": "20260123",
@@ -3415,9 +3415,9 @@
         },
         {
           "date": "20260304",
-          "close": 35442.73,
-          "vol": 24269,
-          "tr_amt": 359092
+          "close": 35454.78,
+          "vol": 24346,
+          "tr_amt": 360988
         }
       ]
     },
@@ -3425,10 +3425,10 @@
       "iscd": "0026",
       "name": "일반서비스",
       "mkt_type": "KOSPI",
-      "value": 1307.46,
-      "change": -9.5,
-      "tr_amt": 364843,
-      "vol": 13478,
+      "value": 1306.83,
+      "change": -9.55,
+      "tr_amt": 366709,
+      "vol": 13555,
       "history": [
         {
           "date": "20260123",
@@ -3576,9 +3576,9 @@
         },
         {
           "date": "20260304",
-          "close": 1307.46,
-          "vol": 13478,
-          "tr_amt": 364843
+          "close": 1306.83,
+          "vol": 13555,
+          "tr_amt": 366709
         }
       ]
     },
@@ -3586,10 +3586,10 @@
       "iscd": "0027",
       "name": "제조",
       "mkt_type": "KOSPI",
-      "value": 14753.58,
-      "change": -9.58,
-      "tr_amt": 43410921,
-      "vol": 651796,
+      "value": 14766.17,
+      "change": -9.5,
+      "tr_amt": 43572065,
+      "vol": 654657,
       "history": [
         {
           "date": "20260123",
@@ -3737,9 +3737,9 @@
         },
         {
           "date": "20260304",
-          "close": 14753.58,
-          "vol": 651796,
-          "tr_amt": 43410921
+          "close": 14766.17,
+          "vol": 654657,
+          "tr_amt": 43572065
         }
       ]
     },
@@ -3747,10 +3747,10 @@
       "iscd": "0028",
       "name": "부동산",
       "mkt_type": "KOSPI",
-      "value": 974.89,
-      "change": -4.36,
-      "tr_amt": 28940,
-      "vol": 7989,
+      "value": 974.33,
+      "change": -4.41,
+      "tr_amt": 29065,
+      "vol": 8023,
       "history": [
         {
           "date": "20260123",
@@ -3898,9 +3898,9 @@
         },
         {
           "date": "20260304",
-          "close": 974.89,
-          "vol": 7989,
-          "tr_amt": 28940
+          "close": 974.33,
+          "vol": 8023,
+          "tr_amt": 29065
         }
       ]
     },
@@ -3908,10 +3908,10 @@
       "iscd": "1001",
       "name": "KOSDAQ",
       "mkt_type": "KOSDAQ",
-      "value": 1005.49,
-      "change": -11.62,
-      "tr_amt": 13977503,
-      "vol": 1230444,
+      "value": 1004.54,
+      "change": -11.7,
+      "tr_amt": 14052230,
+      "vol": 1238095,
       "history": [
         {
           "date": "20260123",
@@ -4059,9 +4059,9 @@
         },
         {
           "date": "20260304",
-          "close": 1005.49,
-          "vol": 1230444,
-          "tr_amt": 13977503
+          "close": 1004.54,
+          "vol": 1238095,
+          "tr_amt": 14052230
         }
       ]
     },
@@ -4069,10 +4069,10 @@
       "iscd": "1028",
       "name": "전기·전자",
       "mkt_type": "KOSDAQ",
-      "value": 1737.14,
-      "change": -11.68,
-      "tr_amt": 3028047,
-      "vol": 229160,
+      "value": 1735.79,
+      "change": -11.75,
+      "tr_amt": 3040133,
+      "vol": 229922,
       "history": [
         {
           "date": "20260123",
@@ -4220,9 +4220,9 @@
         },
         {
           "date": "20260304",
-          "close": 1737.14,
-          "vol": 229160,
-          "tr_amt": 3028047
+          "close": 1735.79,
+          "vol": 229922,
+          "tr_amt": 3040133
         }
       ]
     },
@@ -4230,10 +4230,10 @@
       "iscd": "1030",
       "name": "운송장비·부품",
       "mkt_type": "KOSDAQ",
-      "value": 5518.74,
-      "change": -12.92,
-      "tr_amt": 361713,
-      "vol": 64753,
+      "value": 5514.13,
+      "change": -12.99,
+      "tr_amt": 363359,
+      "vol": 64909,
       "history": [
         {
           "date": "20260123",
@@ -4381,9 +4381,9 @@
         },
         {
           "date": "20260304",
-          "close": 5518.74,
-          "vol": 64753,
-          "tr_amt": 361713
+          "close": 5514.13,
+          "vol": 64909,
+          "tr_amt": 363359
         }
       ]
     },
@@ -4391,10 +4391,10 @@
       "iscd": "1031",
       "name": "기타제조",
       "mkt_type": "KOSDAQ",
-      "value": 637.4,
-      "change": -8.47,
-      "tr_amt": 16317,
-      "vol": 3774,
+      "value": 637.27,
+      "change": -8.49,
+      "tr_amt": 16365,
+      "vol": 3803,
       "history": [
         {
           "date": "20260123",
@@ -4542,9 +4542,9 @@
         },
         {
           "date": "20260304",
-          "close": 637.4,
-          "vol": 3774,
-          "tr_amt": 16317
+          "close": 637.27,
+          "vol": 3803,
+          "tr_amt": 16365
         }
       ]
     },
@@ -4552,10 +4552,10 @@
       "iscd": "1032",
       "name": "통신",
       "mkt_type": "KOSDAQ",
-      "value": 1117.84,
-      "change": -7.97,
-      "tr_amt": 7300,
-      "vol": 1971,
+      "value": 1115.34,
+      "change": -8.18,
+      "tr_amt": 7357,
+      "vol": 1984,
       "history": [
         {
           "date": "20260123",
@@ -4703,9 +4703,9 @@
         },
         {
           "date": "20260304",
-          "close": 1117.84,
-          "vol": 1971,
-          "tr_amt": 7300
+          "close": 1115.34,
+          "vol": 1984,
+          "tr_amt": 7357
         }
       ]
     },
@@ -4713,10 +4713,10 @@
       "iscd": "1033",
       "name": "IT 서비스",
       "mkt_type": "KOSDAQ",
-      "value": 857.29,
-      "change": -10.87,
-      "tr_amt": 715768,
-      "vol": 108100,
+      "value": 856.77,
+      "change": -10.92,
+      "tr_amt": 719754,
+      "vol": 108769,
       "history": [
         {
           "date": "20260123",
@@ -4864,9 +4864,9 @@
         },
         {
           "date": "20260304",
-          "close": 857.29,
-          "vol": 108100,
-          "tr_amt": 715768
+          "close": 856.77,
+          "vol": 108769,
+          "tr_amt": 719754
         }
       ]
     },
@@ -4874,10 +4874,10 @@
       "iscd": "1035",
       "name": "KOSPI100",
       "mkt_type": "KOSDAQ",
-      "value": 5981.49,
-      "change": -9.55,
-      "tr_amt": 43259294,
-      "vol": 249825,
+      "value": 5992.76,
+      "change": -9.38,
+      "tr_amt": 43422373,
+      "vol": 250801,
       "history": [
         {
           "date": "20260123",
@@ -5025,9 +5025,9 @@
         },
         {
           "date": "20260304",
-          "close": 5981.49,
-          "vol": 249825,
-          "tr_amt": 43259294
+          "close": 5992.76,
+          "vol": 250801,
+          "tr_amt": 43422373
         }
       ]
     },
@@ -5035,10 +5035,10 @@
       "iscd": "1036",
       "name": "KOSPI50",
       "mkt_type": "KOSDAQ",
-      "value": 5674.04,
-      "change": -9.44,
-      "tr_amt": 34888880,
-      "vol": 171801,
+      "value": 5685.33,
+      "change": -9.26,
+      "tr_amt": 35022197,
+      "vol": 172470,
       "history": [
         {
           "date": "20260123",
@@ -5186,9 +5186,9 @@
         },
         {
           "date": "20260304",
-          "close": 5674.04,
-          "vol": 171801,
-          "tr_amt": 34888880
+          "close": 5685.33,
+          "vol": 172470,
+          "tr_amt": 35022197
         }
       ]
     },
@@ -5196,10 +5196,10 @@
       "iscd": "1042",
       "name": "우량기업",
       "mkt_type": "KOSDAQ",
-      "value": 2048.82,
-      "change": -10.43,
-      "tr_amt": 4925483,
-      "vol": 307243,
+      "value": 2047.85,
+      "change": -10.47,
+      "tr_amt": 4956189,
+      "vol": 309882,
       "history": [
         {
           "date": "20260123",
@@ -5347,9 +5347,9 @@
         },
         {
           "date": "20260304",
-          "close": 2048.82,
-          "vol": 307243,
-          "tr_amt": 4925483
+          "close": 2047.85,
+          "vol": 309882,
+          "tr_amt": 4956189
         }
       ]
     },
@@ -5357,10 +5357,10 @@
       "iscd": "1044",
       "name": "중견기업",
       "mkt_type": "KOSDAQ",
-      "value": 1721.79,
-      "change": -12.22,
-      "tr_amt": 4202508,
-      "vol": 423596,
+      "value": 1720.04,
+      "change": -12.31,
+      "tr_amt": 4221507,
+      "vol": 426332,
       "history": [
         {
           "date": "20260123",
@@ -5508,9 +5508,9 @@
         },
         {
           "date": "20260304",
-          "close": 1721.79,
-          "vol": 423596,
-          "tr_amt": 4202508
+          "close": 1720.04,
+          "vol": 426332,
+          "tr_amt": 4221507
         }
       ]
     },
@@ -5518,10 +5518,10 @@
       "iscd": "1045",
       "name": "기술성장기업",
       "mkt_type": "KOSDAQ",
-      "value": 9449.3,
-      "change": -13.74,
-      "tr_amt": 2859450,
-      "vol": 166268,
+      "value": 9449.74,
+      "change": -13.73,
+      "tr_amt": 2874892,
+      "vol": 166968,
       "history": [
         {
           "date": "20260123",
@@ -5669,9 +5669,9 @@
         },
         {
           "date": "20260304",
-          "close": 9449.3,
-          "vol": 166268,
-          "tr_amt": 2859450
+          "close": 9449.74,
+          "vol": 166968,
+          "tr_amt": 2874892
         }
       ]
     },
@@ -5679,10 +5679,10 @@
       "iscd": "1047",
       "name": "KRX 은행",
       "mkt_type": "KOSDAQ",
-      "value": 1481.39,
-      "change": -8.65,
-      "tr_amt": 877436,
-      "vol": 15353,
+      "value": 1483.43,
+      "change": -8.53,
+      "tr_amt": 883272,
+      "vol": 15462,
       "history": [
         {
           "date": "20260123",
@@ -5830,9 +5830,9 @@
         },
         {
           "date": "20260304",
-          "close": 1481.39,
-          "vol": 15353,
-          "tr_amt": 877436
+          "close": 1483.43,
+          "vol": 15462,
+          "tr_amt": 883272
         }
       ]
     },
@@ -5840,10 +5840,10 @@
       "iscd": "1049",
       "name": "코스닥 글로벌",
       "mkt_type": "KOSDAQ",
-      "value": 2122.74,
-      "change": -11.27,
-      "tr_amt": 2723308,
-      "vol": 39375,
+      "value": 2116.01,
+      "change": -11.55,
+      "tr_amt": 2740875,
+      "vol": 39614,
       "history": [
         {
           "date": "20260123",
@@ -5991,9 +5991,9 @@
         },
         {
           "date": "20260304",
-          "close": 2122.74,
-          "vol": 39375,
-          "tr_amt": 2723308
+          "close": 2116.01,
+          "vol": 39614,
+          "tr_amt": 2740875
         }
       ]
     },
@@ -6001,10 +6001,10 @@
       "iscd": "1050",
       "name": "KRX 철강",
       "mkt_type": "KOSDAQ",
-      "value": 2931.69,
-      "change": -12.96,
-      "tr_amt": 891151,
-      "vol": 10280,
+      "value": 2928.75,
+      "change": -13.05,
+      "tr_amt": 894669,
+      "vol": 10327,
       "history": [
         {
           "date": "20260123",
@@ -6152,9 +6152,9 @@
         },
         {
           "date": "20260304",
-          "close": 2931.69,
-          "vol": 10280,
-          "tr_amt": 891151
+          "close": 2928.75,
+          "vol": 10327,
+          "tr_amt": 894669
         }
       ]
     }
@@ -6169,11 +6169,11 @@
       "code": "005930",
       "name": "삼성전자",
       "market": "KOSPI",
-      "price": 177200,
-      "change": -9.17,
-      "diff": -17900,
-      "volume": 74823438,
-      "tr_val": 13682167749100,
+      "price": 177500,
+      "change": -9.02,
+      "diff": -17600,
+      "volume": 75098601,
+      "tr_val": 13730898636550,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6181,8 +6181,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -20.2,
-      "vol_ratio": 2.11,
+      "smp": -20.18,
+      "vol_ratio": 2.12,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6213,11 +6213,11 @@
       "code": "069500",
       "name": "KODEX 200",
       "market": "KOSPI",
-      "price": 78110,
-      "change": -9.91,
-      "diff": -8595,
-      "volume": 51086129,
-      "tr_val": 4093377728194,
+      "price": 78300,
+      "change": -9.69,
+      "diff": -8405,
+      "volume": 51631472,
+      "tr_val": 4135967140285,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6225,8 +6225,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -6.12,
-      "vol_ratio": 2.24,
+      "smp": -6.1,
+      "vol_ratio": 2.26,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6257,11 +6257,11 @@
       "code": "122630",
       "name": "KODEX 레버리지",
       "market": "KOSPI",
-      "price": 74935,
-      "change": -19.59,
-      "diff": -18260,
-      "volume": 45193001,
-      "tr_val": 3602747650063,
+      "price": 75255,
+      "change": -19.25,
+      "diff": -17940,
+      "volume": 45357830,
+      "tr_val": 3615094904141,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6304,8 +6304,8 @@
       "price": 331,
       "change": 19.49,
       "diff": 54,
-      "volume": 8501520940,
-      "tr_val": 2692896361570,
+      "volume": 8532092758,
+      "tr_val": 2703041386605,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6314,7 +6314,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": 0.34,
-      "vol_ratio": 2.44,
+      "vol_ratio": 2.45,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6345,11 +6345,11 @@
       "code": "233740",
       "name": "KODEX 코스닥150레버리지",
       "market": "KOSPI",
-      "price": 13920,
-      "change": -24.35,
-      "diff": -4480,
-      "volume": 134295628,
-      "tr_val": 2109801353262,
+      "price": 13835,
+      "change": -24.81,
+      "diff": -4565,
+      "volume": 134925233,
+      "tr_val": 2118546326961,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6358,7 +6358,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.74,
-      "vol_ratio": 1.68,
+      "vol_ratio": 1.69,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6389,11 +6389,11 @@
       "code": "396500",
       "name": "TIGER 반도체TOP10",
       "market": "KOSPI",
-      "price": 30365,
-      "change": -7.66,
-      "diff": -2520,
-      "volume": 55217009,
-      "tr_val": 1736747457950,
+      "price": 30325,
+      "change": -7.78,
+      "diff": -2560,
+      "volume": 55462986,
+      "tr_val": 1744208439257,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6401,8 +6401,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -6.78,
-      "vol_ratio": 1.84,
+      "smp": -6.77,
+      "vol_ratio": 1.85,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6433,11 +6433,11 @@
       "code": "229200",
       "name": "KODEX 코스닥150",
       "market": "KOSPI",
-      "price": 17575,
-      "change": -12.12,
-      "diff": -2425,
-      "volume": 91528277,
-      "tr_val": 1690556918503,
+      "price": 17555,
+      "change": -12.22,
+      "diff": -2445,
+      "volume": 92767546,
+      "tr_val": 1712327355650,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6446,7 +6446,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.73,
-      "vol_ratio": 1.57,
+      "vol_ratio": 1.59,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6477,11 +6477,11 @@
       "code": "114800",
       "name": "KODEX 인버스",
       "market": "KOSPI",
-      "price": 1829,
-      "change": 9.85,
-      "diff": 164,
-      "volume": 797670198,
-      "tr_val": 1424254213535,
+      "price": 1825,
+      "change": 9.61,
+      "diff": 160,
+      "volume": 800513188,
+      "tr_val": 1429456588262,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6490,7 +6490,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": 0.01,
-      "vol_ratio": 3.05,
+      "vol_ratio": 3.06,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6521,20 +6521,20 @@
       "code": "079550",
       "name": "LIG넥스원",
       "market": "KOSDAQ",
-      "price": 647000,
-      "change": -2.12,
-      "diff": -14000,
-      "volume": 1933522,
-      "tr_val": 1345875036000,
+      "price": 648000,
+      "change": -1.97,
+      "diff": -13000,
+      "volume": 1938934,
+      "tr_val": 1349387729000,
       "high52": 844000,
       "low52": 235000,
-      "mktcap": 142340,
+      "mktcap": 142560,
       "sector": "금속",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 2.89,
-      "vol_ratio": 5.97,
+      "smp": 2.88,
+      "vol_ratio": 5.99,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6559,26 +6559,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 76.7
+      "nh_ratio": 76.8
     },
     {
       "code": "086520",
       "name": "에코프로",
       "market": "KOSDAQ",
-      "price": 138300,
-      "change": -15.67,
-      "diff": -25700,
-      "volume": 4184939,
-      "tr_val": 621891629050,
+      "price": 137800,
+      "change": -15.98,
+      "diff": -26200,
+      "volume": 4206010,
+      "tr_val": 624801547650,
       "high52": 190000,
       "low52": 37750,
-      "mktcap": 187778,
+      "mktcap": 187100,
       "sector": "금융",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": 4.64,
-      "vol_ratio": 1.13,
+      "vol_ratio": 1.14,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6603,17 +6603,17 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 72.8
+      "nh_ratio": 72.5
     },
     {
       "code": "498400",
       "name": "KODEX 200타겟위클리커버드콜",
       "market": "KOSPI",
-      "price": 16425,
-      "change": -10.25,
-      "diff": -1875,
-      "volume": 28780803,
-      "tr_val": 485450354789,
+      "price": 16435,
+      "change": -10.19,
+      "diff": -1865,
+      "volume": 28875604,
+      "tr_val": 487006703179,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6621,8 +6621,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -16.43,
-      "vol_ratio": 2.47,
+      "smp": -16.41,
+      "vol_ratio": 2.48,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6653,11 +6653,11 @@
       "code": "003280",
       "name": "흥아해운",
       "market": "KOSPI",
-      "price": 2700,
-      "change": 15.88,
-      "diff": 370,
-      "volume": 167126693,
-      "tr_val": 455599415809,
+      "price": 2795,
+      "change": 19.96,
+      "diff": 465,
+      "volume": 169127607,
+      "tr_val": 461119280011,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6665,8 +6665,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 0.31,
-      "vol_ratio": 8.73,
+      "smp": 0.3,
+      "vol_ratio": 8.81,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6697,11 +6697,11 @@
       "code": "0080G0",
       "name": "KODEX 방산TOP10",
       "market": "KOSPI",
-      "price": 13195,
-      "change": -14.12,
-      "diff": -2170,
-      "volume": 29058347,
-      "tr_val": 422647887518,
+      "price": 13220,
+      "change": -13.96,
+      "diff": -2145,
+      "volume": 29086613,
+      "tr_val": 423020771377,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6710,7 +6710,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -6.43,
-      "vol_ratio": 4.86,
+      "vol_ratio": 4.87,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6741,11 +6741,11 @@
       "code": "128820",
       "name": "대성산업",
       "market": "KOSPI",
-      "price": 11330,
-      "change": 4.23,
-      "diff": 460,
-      "volume": 28140350,
-      "tr_val": 330351849490,
+      "price": 11180,
+      "change": 2.85,
+      "diff": 310,
+      "volume": 28202173,
+      "tr_val": 331047804415,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6754,7 +6754,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.38,
-      "vol_ratio": 4.26,
+      "vol_ratio": 4.27,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6785,11 +6785,11 @@
       "code": "032820",
       "name": "우리기술",
       "market": "KOSPI",
-      "price": 13210,
-      "change": -22.57,
-      "diff": -3850,
-      "volume": 23030483,
-      "tr_val": 327760839115,
+      "price": 13290,
+      "change": -22.1,
+      "diff": -3770,
+      "volume": 23079469,
+      "tr_val": 328409878285,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6829,11 +6829,11 @@
       "code": "005880",
       "name": "대한해운",
       "market": "KOSPI",
-      "price": 2275,
-      "change": -19.33,
-      "diff": -545,
-      "volume": 121170600,
-      "tr_val": 320404322184,
+      "price": 2330,
+      "change": -17.38,
+      "diff": -490,
+      "volume": 121672215,
+      "tr_val": 321561904918,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6842,7 +6842,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.1,
-      "vol_ratio": 6.96,
+      "vol_ratio": 6.98,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6873,11 +6873,11 @@
       "code": "462330",
       "name": "KODEX 2차전지산업레버리지",
       "market": "KOSPI",
-      "price": 1470,
-      "change": -25.34,
-      "diff": -499,
-      "volume": 143696685,
-      "tr_val": 234304261467,
+      "price": 1469,
+      "change": -25.39,
+      "diff": -500,
+      "volume": 144497723,
+      "tr_val": 235479901939,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6885,8 +6885,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -3.2,
-      "vol_ratio": 2.17,
+      "smp": -3.19,
+      "vol_ratio": 2.18,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -6917,11 +6917,11 @@
       "code": "065450",
       "name": "빅텍",
       "market": "KOSPI",
-      "price": 6150,
-      "change": 7.52,
-      "diff": 430,
-      "volume": 35964821,
-      "tr_val": 227573175345,
+      "price": 6070,
+      "change": 6.12,
+      "diff": 350,
+      "volume": 36055961,
+      "tr_val": 228128583705,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6930,7 +6930,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -1.33,
-      "vol_ratio": 7.54,
+      "vol_ratio": 7.56,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -6961,11 +6961,11 @@
       "code": "251340",
       "name": "KODEX 코스닥150선물인버스",
       "market": "KOSPI",
-      "price": 2415,
-      "change": 12.33,
-      "diff": 265,
-      "volume": 98355526,
-      "tr_val": 225789999575,
+      "price": 2420,
+      "change": 12.56,
+      "diff": 270,
+      "volume": 98913588,
+      "tr_val": 227138742060,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -6974,7 +6974,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.37,
-      "vol_ratio": 1.41,
+      "vol_ratio": 1.42,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7005,20 +7005,20 @@
       "code": "247540",
       "name": "에코프로비엠",
       "market": "KOSDAQ",
-      "price": 171700,
-      "change": -13.93,
-      "diff": -27800,
-      "volume": 1192736,
-      "tr_val": 217019507150,
+      "price": 171000,
+      "change": -14.29,
+      "diff": -28500,
+      "volume": 1204579,
+      "tr_val": 219048852850,
       "high52": 260000,
       "low52": 81100,
-      "mktcap": 167967,
+      "mktcap": 167282,
       "sector": "전기·전자",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 4.83,
-      "vol_ratio": 1.3,
+      "smp": 4.82,
+      "vol_ratio": 1.31,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7043,26 +7043,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 66.0
+      "nh_ratio": 65.8
     },
     {
       "code": "196170",
       "name": "알테오젠",
       "market": "KOSDAQ",
-      "price": 339500,
-      "change": -11.36,
-      "diff": -43500,
-      "volume": 610753,
-      "tr_val": 215561568500,
+      "price": 338500,
+      "change": -11.62,
+      "diff": -44500,
+      "volume": 614933,
+      "tr_val": 216978048000,
       "high52": 569000,
       "low52": 315500,
-      "mktcap": 181652,
+      "mktcap": 181117,
       "sector": "일반서비스",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 12.8,
-      "vol_ratio": 1.29,
+      "smp": 12.78,
+      "vol_ratio": 1.3,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7087,17 +7087,17 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 59.7
+      "nh_ratio": 59.5
     },
     {
       "code": "005860",
       "name": "한일사료",
       "market": "KOSPI",
-      "price": 4425,
-      "change": 23.09,
-      "diff": 830,
-      "volume": 43141156,
-      "tr_val": 179134357898,
+      "price": 4385,
+      "change": 21.97,
+      "diff": 790,
+      "volume": 43518910,
+      "tr_val": 180776105840,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7106,7 +7106,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.45,
-      "vol_ratio": 12.02,
+      "vol_ratio": 12.06,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7137,11 +7137,11 @@
       "code": "028670",
       "name": "팬오션",
       "market": "KOSPI",
-      "price": 5190,
-      "change": -16.29,
-      "diff": -1010,
-      "volume": 20375783,
-      "tr_val": 108772177376,
+      "price": 5230,
+      "change": -15.65,
+      "diff": -970,
+      "volume": 20458677,
+      "tr_val": 109203150191,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7150,7 +7150,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -3.13,
-      "vol_ratio": 2.57,
+      "vol_ratio": 2.59,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7181,20 +7181,20 @@
       "code": "352820",
       "name": "하이브",
       "market": "KOSDAQ",
-      "price": 332500,
-      "change": -7.51,
-      "diff": -27000,
-      "volume": 302523,
-      "tr_val": 102320126750,
+      "price": 334000,
+      "change": -7.09,
+      "diff": -25500,
+      "volume": 306975,
+      "tr_val": 103804230500,
       "high52": 405500,
       "low52": 209500,
-      "mktcap": 143106,
+      "mktcap": 143752,
       "sector": "오락·문화",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -3.96,
-      "vol_ratio": 0.87,
+      "smp": -3.95,
+      "vol_ratio": 0.88,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7219,17 +7219,17 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 82.0
+      "nh_ratio": 82.4
     },
     {
       "code": "Q530107",
       "name": "삼성 인버스 2X 코스닥150 선물 ETN",
       "market": "KOSPI",
-      "price": 2240,
-      "change": 23.55,
-      "diff": 427,
-      "volume": 49253121,
-      "tr_val": 101314205994,
+      "price": 2260,
+      "change": 24.66,
+      "diff": 447,
+      "volume": 49665470,
+      "tr_val": 102243828484,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7237,8 +7237,8 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -3.66,
-      "vol_ratio": 1.76,
+      "smp": -3.65,
+      "vol_ratio": 1.77,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7266,58 +7266,14 @@
       "nh_ratio": 0
     },
     {
-      "code": "018880",
-      "name": "한온시스템",
-      "market": "KOSPI",
-      "price": 3760,
-      "change": -9.94,
-      "diff": -415,
-      "volume": 25147726,
-      "tr_val": 97417913525,
-      "high52": 0,
-      "low52": 0,
-      "mktcap": 0,
-      "sector": "",
-      "phase": "",
-      "phase_key": "",
-      "muges_ratio": 1.0,
-      "smp": -2.2,
-      "vol_ratio": 0.56,
-      "obv_above_ma": true,
-      "f_consec": 0,
-      "i_consec": 0,
-      "foreign_today": 0,
-      "inst_today": 0,
-      "indiv_today": 0,
-      "supply_periods": {
-        "day": {
-          "foreign": 0,
-          "inst": 0,
-          "indiv": 0
-        },
-        "week": {
-          "foreign": -15795000000,
-          "inst": -2919000000,
-          "indiv": 18744000000
-        },
-        "month": {
-          "foreign": -102120000000,
-          "inst": -60286000000,
-          "indiv": 161819000000
-        }
-      },
-      "nh_flag": "",
-      "nh_ratio": 0
-    },
-    {
       "code": "053050",
       "name": "지에스이",
       "market": "KOSPI",
-      "price": 3940,
-      "change": 27.51,
-      "diff": 850,
-      "volume": 25831302,
-      "tr_val": 95752935948,
+      "price": 3990,
+      "change": 29.13,
+      "diff": 900,
+      "volume": 26333474,
+      "tr_val": 97750363021,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7326,7 +7282,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.13,
-      "vol_ratio": 13.23,
+      "vol_ratio": 13.32,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7354,14 +7310,58 @@
       "nh_ratio": 0
     },
     {
+      "code": "018880",
+      "name": "한온시스템",
+      "market": "KOSPI",
+      "price": 3755,
+      "change": -10.06,
+      "diff": -420,
+      "volume": 25202500,
+      "tr_val": 97623730287,
+      "high52": 0,
+      "low52": 0,
+      "mktcap": 0,
+      "sector": "",
+      "phase": "",
+      "phase_key": "",
+      "muges_ratio": 1.0,
+      "smp": -2.2,
+      "vol_ratio": 0.57,
+      "obv_above_ma": true,
+      "f_consec": 0,
+      "i_consec": 0,
+      "foreign_today": 0,
+      "inst_today": 0,
+      "indiv_today": 0,
+      "supply_periods": {
+        "day": {
+          "foreign": 0,
+          "inst": 0,
+          "indiv": 0
+        },
+        "week": {
+          "foreign": -15795000000,
+          "inst": -2919000000,
+          "indiv": 18744000000
+        },
+        "month": {
+          "foreign": -102120000000,
+          "inst": -60286000000,
+          "indiv": 161819000000
+        }
+      },
+      "nh_flag": "",
+      "nh_ratio": 0
+    },
+    {
       "code": "001510",
       "name": "SK증권",
       "market": "KOSPI",
-      "price": 1520,
-      "change": -16.48,
-      "diff": -300,
-      "volume": 56280758,
-      "tr_val": 90696109991,
+      "price": 1521,
+      "change": -16.43,
+      "diff": -299,
+      "volume": 56497328,
+      "tr_val": 91024573225,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7401,19 +7401,19 @@
       "code": "039030",
       "name": "이오테크닉스",
       "market": "KOSDAQ",
-      "price": 385000,
-      "change": -8.66,
-      "diff": -36500,
-      "volume": 208034,
-      "tr_val": 85605967000,
+      "price": 383000,
+      "change": -9.13,
+      "diff": -38500,
+      "volume": 209539,
+      "tr_val": 86182875000,
       "high52": 458500,
       "low52": 111200,
-      "mktcap": 47430,
+      "mktcap": 47184,
       "sector": "기계·장비",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 12.98,
+      "smp": 12.97,
       "vol_ratio": 1.3,
       "obv_above_ma": false,
       "f_consec": 0,
@@ -7439,26 +7439,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 84.0
+      "nh_ratio": 83.5
     },
     {
       "code": "263750",
       "name": "펄어비스",
       "market": "KOSDAQ",
-      "price": 54600,
-      "change": -9.0,
-      "diff": -5400,
-      "volume": 918494,
-      "tr_val": 52462263600,
+      "price": 54400,
+      "change": -9.33,
+      "diff": -5600,
+      "volume": 925043,
+      "tr_val": 52818616600,
       "high52": 64000,
       "low52": 28750,
-      "mktcap": 35079,
+      "mktcap": 34951,
       "sector": "IT 서비스",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 12.55,
-      "vol_ratio": 1.7,
+      "smp": 12.53,
+      "vol_ratio": 1.71,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7483,26 +7483,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 85.3
+      "nh_ratio": 85.0
     },
     {
       "code": "101490",
       "name": "에스앤에스텍",
       "market": "KOSDAQ",
-      "price": 82500,
-      "change": -13.52,
-      "diff": -12900,
-      "volume": 559012,
-      "tr_val": 49444292500,
+      "price": 82400,
+      "change": -13.63,
+      "diff": -13000,
+      "volume": 562441,
+      "tr_val": 49726701700,
       "high52": 107500,
       "low52": 27300,
-      "mktcap": 17601,
+      "mktcap": 17580,
       "sector": "전기·전자",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 9.17,
-      "vol_ratio": 1.45,
+      "smp": 9.16,
+      "vol_ratio": 1.46,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7533,11 +7533,11 @@
       "code": "008350",
       "name": "남선알미늄",
       "market": "KOSPI",
-      "price": 1210,
-      "change": 3.42,
-      "diff": 40,
-      "volume": 36018512,
-      "tr_val": 45590358971,
+      "price": 1199,
+      "change": 2.48,
+      "diff": 29,
+      "volume": 36061185,
+      "tr_val": 45641652386,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7577,20 +7577,20 @@
       "code": "095340",
       "name": "ISC",
       "market": "KOSDAQ",
-      "price": 167600,
-      "change": -7.15,
-      "diff": -12900,
-      "volume": 252360,
-      "tr_val": 44743744900,
+      "price": 167300,
+      "change": -7.31,
+      "diff": -13200,
+      "volume": 254042,
+      "tr_val": 45025508700,
       "high52": 200500,
       "low52": 42800,
-      "mktcap": 35526,
+      "mktcap": 35463,
       "sector": "유통",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 6.81,
-      "vol_ratio": 0.94,
+      "smp": 6.8,
+      "vol_ratio": 0.95,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7615,26 +7615,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 83.6
+      "nh_ratio": 83.4
     },
     {
       "code": "122870",
       "name": "와이지엔터",
       "market": "KOSDAQ",
-      "price": 64400,
-      "change": -4.87,
-      "diff": -3300,
-      "volume": 651105,
-      "tr_val": 43527870300,
+      "price": 64200,
+      "change": -5.17,
+      "diff": -3500,
+      "volume": 654866,
+      "tr_val": 43769503400,
       "high52": 109800,
       "low52": 56000,
-      "mktcap": 12037,
+      "mktcap": 12000,
       "sector": "오락·문화",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.34,
-      "vol_ratio": 1.93,
+      "vol_ratio": 1.94,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7659,7 +7659,7 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 58.7
+      "nh_ratio": 58.5
     },
     {
       "code": "252710",
@@ -7668,8 +7668,8 @@
       "price": 351,
       "change": 19.39,
       "diff": 57,
-      "volume": 121115634,
-      "tr_val": 40604390450,
+      "volume": 121368119,
+      "tr_val": 40693273545,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7678,7 +7678,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -1.23,
-      "vol_ratio": 2.71,
+      "vol_ratio": 2.72,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7709,11 +7709,11 @@
       "code": "002360",
       "name": "SH에너지화학",
       "market": "KOSPI",
-      "price": 548,
-      "change": 14.17,
-      "diff": 68,
-      "volume": 64520069,
-      "tr_val": 35802053844,
+      "price": 557,
+      "change": 16.04,
+      "diff": 77,
+      "volume": 64664104,
+      "tr_val": 35881851921,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7722,7 +7722,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": 0.0,
-      "vol_ratio": 9.0,
+      "vol_ratio": 9.02,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7753,11 +7753,11 @@
       "code": "412570",
       "name": "TIGER 2차전지TOP10레버리지",
       "market": "KOSPI",
-      "price": 1415,
-      "change": -22.47,
-      "diff": -410,
-      "volume": 23531292,
-      "tr_val": 35391087961,
+      "price": 1402,
+      "change": -23.18,
+      "diff": -423,
+      "volume": 23596537,
+      "tr_val": 35482994769,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -7766,7 +7766,7 @@
       "phase_key": "",
       "muges_ratio": 1.0,
       "smp": -0.83,
-      "vol_ratio": 1.91,
+      "vol_ratio": 1.92,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -7797,20 +7797,20 @@
       "code": "357780",
       "name": "솔브레인",
       "market": "KOSDAQ",
-      "price": 385500,
-      "change": -12.49,
-      "diff": -55000,
-      "volume": 73856,
-      "tr_val": 30703771750,
+      "price": 382500,
+      "change": -13.17,
+      "diff": -58000,
+      "volume": 74632,
+      "tr_val": 31001901500,
       "high52": 530000,
       "low52": 155000,
-      "mktcap": 29986,
+      "mktcap": 29753,
       "sector": "화학",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 15.54,
-      "vol_ratio": 0.98,
+      "smp": 15.51,
+      "vol_ratio": 0.99,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7835,7 +7835,7 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 72.7
+      "nh_ratio": 72.2
     },
     {
       "code": "036570",
@@ -7844,8 +7844,8 @@
       "price": 203000,
       "change": -7.52,
       "diff": -16500,
-      "volume": 145208,
-      "tr_val": 30068951500,
+      "volume": 145878,
+      "tr_val": 30204923500,
       "high52": 258500,
       "low52": 134600,
       "mktcap": 43734,
@@ -7853,7 +7853,7 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 22.55,
+      "smp": 22.53,
       "vol_ratio": 0.82,
       "obv_above_ma": false,
       "f_consec": 0,
@@ -7885,20 +7885,20 @@
       "code": "035900",
       "name": "JYP Ent.",
       "market": "KOSDAQ",
-      "price": 59300,
-      "change": -8.91,
-      "diff": -5800,
-      "volume": 419833,
-      "tr_val": 25661697000,
+      "price": 59100,
+      "change": -9.22,
+      "diff": -6000,
+      "volume": 423556,
+      "tr_val": 25882053000,
       "high52": 88500,
       "low52": 56600,
-      "mktcap": 21071,
+      "mktcap": 21000,
       "sector": "오락·문화",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -14.01,
-      "vol_ratio": 1.14,
+      "smp": -13.98,
+      "vol_ratio": 1.15,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7923,26 +7923,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 67.0
+      "nh_ratio": 66.8
     },
     {
       "code": "166090",
       "name": "하나머티리얼즈",
       "market": "KOSDAQ",
-      "price": 55200,
-      "change": -6.44,
-      "diff": -3800,
-      "volume": 300396,
-      "tr_val": 17471744250,
+      "price": 54700,
+      "change": -7.29,
+      "diff": -4300,
+      "volume": 302220,
+      "tr_val": 17571727150,
       "high52": 70700,
       "low52": 23450,
-      "mktcap": 10917,
+      "mktcap": 10818,
       "sector": "전기·전자",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 8.48,
-      "vol_ratio": 1.24,
+      "smp": 8.47,
+      "vol_ratio": 1.25,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -7967,26 +7967,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 78.1
+      "nh_ratio": 77.4
     },
     {
       "code": "041510",
       "name": "에스엠",
       "market": "KOSDAQ",
-      "price": 98400,
-      "change": -7.78,
-      "diff": -8300,
-      "volume": 162281,
-      "tr_val": 16371493050,
+      "price": 98600,
+      "change": -7.59,
+      "diff": -8100,
+      "volume": 164493,
+      "tr_val": 16589634750,
       "high52": 155100,
       "low52": 90100,
-      "mktcap": 22528,
+      "mktcap": 22574,
       "sector": "오락·문화",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": 2.05,
-      "vol_ratio": 0.92,
+      "smp": 2.04,
+      "vol_ratio": 0.94,
       "obv_above_ma": true,
       "f_consec": 0,
       "i_consec": 0,
@@ -8011,26 +8011,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 63.4
+      "nh_ratio": 63.6
     },
     {
       "code": "251270",
       "name": "넷마블",
       "market": "KOSDAQ",
-      "price": 46450,
-      "change": -9.63,
-      "diff": -4950,
-      "volume": 293828,
-      "tr_val": 14007722525,
+      "price": 46500,
+      "change": -9.53,
+      "diff": -4900,
+      "volume": 295585,
+      "tr_val": 14089189075,
       "high52": 69000,
       "low52": 37500,
-      "mktcap": 38071,
+      "mktcap": 38112,
       "sector": "IT 서비스",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -9.15,
-      "vol_ratio": 0.97,
+      "smp": -9.14,
+      "vol_ratio": 0.98,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -8055,25 +8055,25 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 67.3
+      "nh_ratio": 67.4
     },
     {
       "code": "006280",
       "name": "녹십자",
       "market": "KOSDAQ",
-      "price": 142300,
-      "change": -12.21,
-      "diff": -19800,
-      "volume": 75560,
-      "tr_val": 11113413050,
+      "price": 142500,
+      "change": -12.09,
+      "diff": -19600,
+      "volume": 75900,
+      "tr_val": 11161812050,
       "high52": 183800,
       "low52": 111800,
-      "mktcap": 16630,
+      "mktcap": 16653,
       "sector": "제약",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -4.81,
+      "smp": -4.8,
       "vol_ratio": 1.04,
       "obv_above_ma": false,
       "f_consec": 0,
@@ -8099,7 +8099,7 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 77.4
+      "nh_ratio": 77.5
     },
     {
       "code": "152550",
@@ -8108,8 +8108,8 @@
       "price": 362,
       "change": 29.75,
       "diff": 83,
-      "volume": 28776091,
-      "tr_val": 10357661986,
+      "volume": 28776092,
+      "tr_val": 10357662348,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -8149,11 +8149,11 @@
       "code": "004410",
       "name": "서울식품",
       "market": "KOSPI",
-      "price": 192,
-      "change": -9.43,
-      "diff": -20,
-      "volume": 43813060,
-      "tr_val": 8261736601,
+      "price": 190,
+      "change": -10.38,
+      "diff": -22,
+      "volume": 44032848,
+      "tr_val": 8303661736,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -8193,20 +8193,20 @@
       "code": "112040",
       "name": "위메이드",
       "market": "KOSDAQ",
-      "price": 21700,
-      "change": -12.15,
-      "diff": -3000,
-      "volume": 293600,
-      "tr_val": 6669675375,
+      "price": 21600,
+      "change": -12.55,
+      "diff": -3100,
+      "volume": 297486,
+      "tr_val": 6753935875,
       "high52": 43500,
       "low52": 21400,
-      "mktcap": 7367,
+      "mktcap": 7333,
       "sector": "IT 서비스",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -7.33,
-      "vol_ratio": 1.52,
+      "smp": -7.29,
+      "vol_ratio": 1.55,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -8231,26 +8231,26 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 49.9
+      "nh_ratio": 49.7
     },
     {
       "code": "293490",
       "name": "카카오게임즈",
       "market": "KOSDAQ",
-      "price": 12220,
-      "change": -11.71,
-      "diff": -1620,
-      "volume": 507824,
-      "tr_val": 6525050235,
+      "price": 12210,
+      "change": -11.78,
+      "diff": -1630,
+      "volume": 511487,
+      "tr_val": 6569794565,
       "high52": 23600,
       "low52": 12170,
-      "mktcap": 10972,
+      "mktcap": 10963,
       "sector": "IT 서비스",
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -18.83,
-      "vol_ratio": 1.53,
+      "smp": -18.78,
+      "vol_ratio": 1.55,
       "obv_above_ma": false,
       "f_consec": 0,
       "i_consec": 0,
@@ -8275,20 +8275,20 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 51.8
+      "nh_ratio": 51.7
     },
     {
       "code": "041960",
       "name": "블루오션",
       "market": "KOSDAQ",
-      "price": 7900,
-      "change": -11.24,
-      "diff": -1000,
-      "volume": 657597,
-      "tr_val": 5385828095,
+      "price": 7890,
+      "change": -11.35,
+      "diff": -1010,
+      "volume": 657722,
+      "tr_val": 5386815585,
       "high52": 9860,
       "low52": 3980,
-      "mktcap": 5837,
+      "mktcap": 5830,
       "sector": "제약",
       "phase": "",
       "phase_key": "",
@@ -8319,7 +8319,7 @@
         }
       },
       "nh_flag": "",
-      "nh_ratio": 80.1
+      "nh_ratio": 80.0
     },
     {
       "code": "Q530036",
@@ -8328,8 +8328,8 @@
       "price": 51,
       "change": -7.27,
       "diff": -4,
-      "volume": 89168541,
-      "tr_val": 4628705696,
+      "volume": 89390864,
+      "tr_val": 4640044169,
       "high52": 0,
       "low52": 0,
       "mktcap": 0,
@@ -8337,7 +8337,7 @@
       "phase": "",
       "phase_key": "",
       "muges_ratio": 1.0,
-      "smp": -32.9,
+      "smp": -32.88,
       "vol_ratio": 2.59,
       "obv_above_ma": false,
       "f_consec": 0,
@@ -8374,8 +8374,8 @@
     "new_high": 0
   },
   "summary_lines": [
-    "📊 KOSPI 5,239.91 (▼9.53%) · 상승14 하락908",
-    "📊 KOSDAQ 1,006.27 (▼11.55%) · 상승38 하락1698",
-    "🔥 거래대금 상위: 삼성전자(-9.2%), KODEX 200(-9.9%), KODEX 레버리지(-19.6%), KODEX 200선물인버스2X(+19.5%), KODEX 코스닥150레버리지(-24.4%)"
+    "📊 KOSPI 5,220.84 (▼9.86%) · 상승14 하락908",
+    "📊 KOSDAQ 1,002.53 (▼11.88%) · 상승38 하락1699",
+    "🔥 거래대금 상위: 삼성전자(-9.0%), KODEX 200(-9.7%), KODEX 레버리지(-19.2%), KODEX 200선물인버스2X(+19.5%), KODEX 코스닥150레버리지(-24.8%)"
   ]
 }
