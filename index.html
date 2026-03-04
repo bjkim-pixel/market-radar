@@ -136,8 +136,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
 .modal-close{display:block;text-align:center;padding:12px;font-size:12px;color:var(--t3);cursor:pointer;margin-top:10px;border-top:1px solid var(--bd)}
 .modal-section{margin-bottom:16px}
 .modal-section-t{font-size:9.5px;font-weight:700;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
-.chart-wrap{margin:8px 0;border-radius:var(--r8);overflow:hidden;background:rgba(255,255,255,.02)}
-.chart-wrap svg{display:block;width:100%}
+.daily-table{width:100%;border-collapse:collapse;font-size:10px;min-width:340px}
+.daily-table th{text-align:right;padding:5px 4px;color:var(--t3);font-weight:600;border-bottom:1px solid var(--bd)}
+.daily-table th:first-child{text-align:left}
+.daily-table td{text-align:right;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--mono)}
+.daily-table td:first-child{text-align:left;font-family:var(--sans);color:var(--t2);font-weight:500}
+.daily-table td:last-child{text-align:center;font-family:var(--sans)}
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:12px}
 .spinner{width:26px;height:26px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite}
 .error-box{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.2);border-radius:var(--r12);padding:16px;text-align:center;color:var(--dn);font-size:13px}
@@ -331,32 +335,40 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
 </div>
 
 <script>
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    전역 상태
-═══════════════════════════════════════ */
-let G        = null;
-let _period  = 'day';
-let _nhMode  = 'h';
-let _pFilter = 'all';
-let _secMkt  = 'all';
+═══════════════════════════════════ */
+let G       = null;
+let _period = 'day';
+let _nhMode = 'h';
+let _pFilter= 'all';
+let _secMkt = 'all';
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    유틸
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 const fmtN = n => Number(n||0).toLocaleString('ko');
 const fmtP = n => (n>=0?'+':'')+Number(n).toFixed(2)+'%';
 
 function fmtAmt(n) {
   const neg=n<0, a=Math.abs(n);
   let s;
-  if(a>=1e12) s=(a/1e12).toFixed(1)+'조';
-  else if(a>=1e8) s=(a/1e8).toFixed(0)+'억';
-  else if(a>=1e4) s=(a/1e4).toFixed(0)+'만';
-  else s=fmtN(a);
+  if(a>=1e12)      s=(a/1e12).toFixed(1)+'조';
+  else if(a>=1e8)  s=(a/1e8).toFixed(0)+'억';
+  else if(a>=1e4)  s=(a/1e4).toFixed(0)+'만';
+  else             s=fmtN(a);
   return (neg?'-':'+')+s;
 }
 
-/* 섹터 tr_amt: API 반환이 백만원 단위 → 원으로 변환 후 표시 (부호 없음) */
+function fmtAmtBil(v) {
+  if(v===0||v===undefined||v===null) return '-';
+  const sign = v>=0?'+':'-';
+  const a    = Math.abs(v);
+  if(a>=1e8) return sign+(a/1e8).toFixed(0)+'억';
+  if(a>=1e4) return sign+(a/1e4).toFixed(0)+'만';
+  return sign+fmtN(a);
+}
+
 function fmtSecAmt(trAmt) {
   const a=Math.abs((trAmt||0)*1_000_000);
   if(a>=1e12) return (a/1e12).toFixed(1)+'조';
@@ -370,6 +382,7 @@ function mktBadge(m) {
     ? '<span class="badge mkt-q">KOSDAQ</span>'
     : '<span class="badge mkt-k">KOSPI</span>';
 }
+
 function phaseColor(k) {
   return {golden:'#F5A623',p2:'#10D98A',p1:'#3B7BF6',p3:'#FF4D6D'}[k]||'#94A3B8';
 }
@@ -388,7 +401,7 @@ function makeSVGChart(data, color='#3B7BF6', h=52) {
   const lx=parseFloat(pts[pts.length-1].split(',')[0]);
   const ly=parseFloat(pts[pts.length-1].split(',')[1]);
   const fill=`${pts[0].split(',')[0]},${h} ${pts.join(' ')} ${pts[pts.length-1].split(',')[0]},${h}`;
-  const gid='g'+color.replace('#','');
+  const gid='g'+Math.random().toString(36).slice(2,7);
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px">
     <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${color}" stop-opacity="0.25"/>
@@ -400,24 +413,25 @@ function makeSVGChart(data, color='#3B7BF6', h=52) {
   </svg>`;
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    데이터 로드
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 async function loadData() {
   try {
-    const resp=await fetch(`data/market.json?t=${Date.now()}`);
+    const resp = await fetch(`data/market.json?t=${Date.now()}`);
     if(!resp.ok) throw new Error('없음');
-    G=await resp.json();
+    G = await resp.json();
     document.getElementById('loadingEl').style.display='none';
-    const activeTab=document.querySelector('.tab.on');
-    const tabIdx=activeTab?activeTab.dataset.t:'0';
+    const activeTab = document.querySelector('.tab.on');
+    const tabIdx    = activeTab ? activeTab.dataset.t : '0';
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
     document.querySelector(`.panel[data-p="${tabIdx}"]`)?.classList.add('on');
-    const dateText=G.date||G.updated_at?.split(' ')[0]||'-';
-    document.getElementById('dateBadgeText').textContent=`${dateText} (업데이트: ${G.updated_at||'-'})`;
+    const dateText = G.date || G.updated_at?.split(' ')[0] || '-';
+    document.getElementById('dateBadgeText').textContent =
+      `${dateText} (업데이트: ${G.updated_at||'-'})`;
     renderAll();
   } catch(e) {
-    document.getElementById('loadingEl').innerHTML=
+    document.getElementById('loadingEl').innerHTML =
       `<div class="error-box">⚠️ 데이터를 불러올 수 없습니다.<br>
        <small style="color:var(--t3);margin-top:6px;display:block">GitHub Actions에서 Run workflow를 실행해주세요</small></div>`;
   }
@@ -425,19 +439,25 @@ async function loadData() {
 
 function renderAll() {
   if(!G) return;
-  renderTicker(); renderTab0(); renderTab1(); renderTab2(); renderTab3(); renderTab4();
+  renderTicker();
+  renderTab0();
+  renderTab1();
+  renderTab2();
+  renderTab3();
+  renderTab4();
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    TAB 0: 종합
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function renderTab0() {
-  const date=G.date||'-';
-  const indices=G.indices||[];
-  document.getElementById('idxGrid').innerHTML=indices.length
-    ? indices.map(idx=>{
-        const up=idx.change>=0;
-        const tv=idx.tr_amt>0?fmtSecAmt(idx.tr_amt/1_000_000)+' 거래':'';
+  const date    = G.date||'-';
+  const indices = G.indices||[];
+
+  document.getElementById('idxGrid').innerHTML = indices.length
+    ? indices.map(idx => {
+        const up = idx.change>=0;
+        const tv = idx.tr_amt>0 ? fmtSecAmt(idx.tr_amt/1_000_000)+' 거래' : '';
         return `<div class="idx-c ${up?'up':'dn'}" onclick="openIdxModal('${idx.name}')">
           <div class="idx-nm">${idx.name}</div>
           <div class="idx-v ${up?'up':'dn'}">${fmtN(idx.value)}</div>
@@ -447,30 +467,30 @@ function renderTab0() {
       }).join('')
     : `<div class="error-box" style="grid-column:span 3;font-size:11px">지수 데이터 없음</div>`;
 
-  document.getElementById('summaryDate').textContent=`${date} 기준`;
-  const lines=G.summary_lines||[];
-  document.getElementById('summaryLines').innerHTML=lines.length
+  document.getElementById('summaryDate').textContent = `${date} 기준`;
+  const lines = G.summary_lines||[];
+  document.getElementById('summaryLines').innerHTML = lines.length
     ? lines.map(l=>`<div class="summary-line">${l}</div>`).join('')
     : '<div class="summary-line t3">데이터 수집 중...</div>';
 
   renderSupplyBars('supplyHome', G.market_supply||{});
 
-  const ps=G.phase_stats||{};
-  document.getElementById('statHome').innerHTML=[
+  const ps = G.phase_stats||{};
+  document.getElementById('statHome').innerHTML = [
     {l:'⭐ GOLDEN',v:ps.golden||0,c:'#F5A623'},
-    {l:'🚀 신고가',v:ps.new_high||0,c:'#F97316'},
-    {l:'🔵 P1 매집',v:ps.p1||0,c:'#3B7BF6'},
-    {l:'🔴 P3 경고',v:ps.p3||0,c:'#FF4D6D'},
+    {l:'🚀 신고가',  v:ps.new_high||0,c:'#F97316'},
+    {l:'🔵 P1 매집',v:ps.p1||0,    c:'#3B7BF6'},
+    {l:'🔴 P3 경고',v:ps.p3||0,    c:'#FF4D6D'},
   ].map(s=>`<div class="stat-c" style="border-color:${s.c}22">
     <div class="stat-l">${s.l}</div>
     <div class="stat-v" style="color:${s.c}">${s.v}</div>
     <div class="stat-s">종목 (${date})</div>
   </div>`).join('');
 
-  const hot=(G.stocks||[]).filter(s=>s.phase).slice(0,5);
-  document.getElementById('hotStocks').innerHTML=hot.length
+  const hot = (G.stocks||[]).filter(s=>s.phase).slice(0,5);
+  document.getElementById('hotStocks').innerHTML = hot.length
     ? hot.map((s,i)=>{
-        const up=s.change>=0,pc=phaseColor(s.phase_key);
+        const up=s.change>=0, pc=phaseColor(s.phase_key);
         return `<div class="list-item" onclick="openStockModal('${s.code}')">
           <div class="li-no">${i+1}</div>
           <div class="li-info">
@@ -489,42 +509,50 @@ function renderTab0() {
     : '<div class="empty">신호 종목 없음</div>';
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    TAB 1: 수급
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function setPeriod(p) {
-  _period=p;
+  _period = p;
   document.querySelectorAll('.period-tab').forEach((b,i)=>
-    b.classList.toggle('on',['day','week','month'][i]===p)
+    b.classList.toggle('on', ['day','week','month'][i]===p)
   );
-  const labels={day:'오늘',week:'1주일',month:'1개월'};
-  document.getElementById('supCardT').textContent=`시장 전체 수급 (${labels[p]})`;
+  const labels = {day:'오늘',week:'1주일',month:'1개월'};
+  document.getElementById('supCardT').textContent = `시장 전체 수급 (${labels[p]})`;
   renderTab1();
 }
 
 function renderTab1() {
-  const ms=G?.market_supply||{}, stocks=G?.stocks||[], date=G?.date||'-';
-  let fn=0,inn=0,iv=0;
-  if(_period==='day'){fn=ms.foreign_net||0;inn=ms.inst_net||0;iv=ms.indiv_net||0;}
-  else {
+  const ms     = G?.market_supply||{};
+  const stocks = G?.stocks||[];
+  const date   = G?.date||'-';
+
+  let fn=0, inn=0, iv=0;
+  if(_period==='day') {
+    fn=ms.foreign_net||0; inn=ms.inst_net||0; iv=ms.indiv_net||0;
+  } else {
     stocks.forEach(s=>{
       const sp=(s.supply_periods||{})[_period]||{};
       fn+=sp.foreign||0; inn+=sp.inst||0; iv+=sp.indiv||0;
     });
   }
-  renderSupplyBars('mktSupply',{foreign_net:fn,inst_net:inn,indiv_net:iv});
+  renderSupplyBars('mktSupply', {foreign_net:fn, inst_net:inn, indiv_net:iv});
   renderTopTrader('topForeign','fMore','foreign','외국인',stocks,date);
-  renderTopTrader('topInst','iMore','inst','기관',stocks,date);
-  renderTopTrader('topIndiv',null,'indiv','개인',stocks,date);
+  renderTopTrader('topInst',   'iMore','inst',   '기관',  stocks,date);
+  renderTopTrader('topIndiv',  null,   'indiv',  '개인',  stocks,date);
   renderConsec('fConsList','fcMore','f_consec','foreign_today','외인',stocks);
-  renderConsec('iConsList','icMore','i_consec','inst_today','기관',stocks);
+  renderConsec('iConsList','icMore','i_consec','inst_today',   '기관',stocks);
 }
 
-function renderSupplyBars(elId,ms) {
-  const rows=[{nm:'외국인',v:ms.foreign_net||0},{nm:'기관',v:ms.inst_net||0},{nm:'개인',v:ms.indiv_net||0}];
-  const maxA=Math.max(...rows.map(r=>Math.abs(r.v)),1);
-  document.getElementById(elId).innerHTML=rows.map(r=>{
-    const up=r.v>=0,pct=Math.abs(r.v)/maxA*100;
+function renderSupplyBars(elId, ms) {
+  const rows = [
+    {nm:'외국인',v:ms.foreign_net||0},
+    {nm:'기관',  v:ms.inst_net||0},
+    {nm:'개인',  v:ms.indiv_net||0},
+  ];
+  const maxA = Math.max(...rows.map(r=>Math.abs(r.v)),1);
+  document.getElementById(elId).innerHTML = rows.map(r=>{
+    const up=r.v>=0, pct=Math.abs(r.v)/maxA*100;
     return `<div class="sup-row">
       <div class="sup-nm">${r.nm}</div>
       <div class="sup-bw"><div class="sup-bf ${up?'up':'dn'}" style="width:${pct}%"></div></div>
@@ -533,10 +561,11 @@ function renderSupplyBars(elId,ms) {
   }).join('');
 }
 
-function renderTopTrader(elId,moreId,actor,label,stocks,date) {
-  const key=actor+'_today';
-  const buying=stocks.filter(s=>s[key]>0).sort((a,b)=>b[key]-a[key]);
-  const selling=stocks.filter(s=>s[key]<0).sort((a,b)=>a[key]-b[key]);
+function renderTopTrader(elId, moreId, actor, label, stocks, date) {
+  const key     = actor+'_today';
+  const buying  = stocks.filter(s=>s[key]>0).sort((a,b)=>b[key]-a[key]);
+  const selling = stocks.filter(s=>s[key]<0).sort((a,b)=>a[key]-b[key]);
+
   function mkRow(s,i,isBuy) {
     const up=s.change>=0;
     return `<div class="list-item" onclick="openStockModal('${s.code}')">
@@ -551,21 +580,23 @@ function renderTopTrader(elId,moreId,actor,label,stocks,date) {
       </div>
     </div>`;
   }
-  const t10B=buying.slice(0,10),t10S=selling.slice(0,10);
-  const m50B=buying.slice(10,50),m50S=selling.slice(10,50);
-  const hB=`<div style="font-size:10px;font-weight:700;color:var(--up);padding:8px 0 4px;border-bottom:1px solid var(--bd)">${label} 상위 매수 (${date})</div>`;
-  const hS=`<div style="font-size:10px;font-weight:700;color:var(--dn);padding:8px 0 4px;border-bottom:1px solid var(--bd)">${label} 상위 매도 (${date})</div>`;
-  document.getElementById(elId).innerHTML=
-    hB+(t10B.length?t10B.map((s,i)=>mkRow(s,i,true)).join(''):'<div class="empty">데이터 없음</div>')+
-    hS+(t10S.length?t10S.map((s,i)=>mkRow(s,i,false)).join(''):'<div class="empty">데이터 없음</div>');
-  if(moreId) document.getElementById(moreId).innerHTML=
-    (m50B.length?hB+m50B.map((s,i)=>mkRow(s,i+10,true)).join(''):'')+
-    (m50S.length?hS+m50S.map((s,i)=>mkRow(s,i+10,false)).join(''):'');
+
+  const hB = `<div style="font-size:10px;font-weight:700;color:var(--up);padding:8px 0 4px;border-bottom:1px solid var(--bd)">${label} 상위 매수 (${date})</div>`;
+  const hS = `<div style="font-size:10px;font-weight:700;color:var(--dn);padding:8px 0 4px;border-bottom:1px solid var(--bd)">${label} 상위 매도 (${date})</div>`;
+
+  document.getElementById(elId).innerHTML =
+    hB+(buying.slice(0,10).length  ? buying.slice(0,10).map((s,i)=>mkRow(s,i,true)).join('')  : '<div class="empty">데이터 없음</div>')+
+    hS+(selling.slice(0,10).length ? selling.slice(0,10).map((s,i)=>mkRow(s,i,false)).join('') : '<div class="empty">데이터 없음</div>');
+
+  if(moreId)
+    document.getElementById(moreId).innerHTML =
+      (buying.slice(10).length  ? hB+buying.slice(10).map((s,i)=>mkRow(s,i+10,true)).join('')  : '')+
+      (selling.slice(10).length ? hS+selling.slice(10).map((s,i)=>mkRow(s,i+10,false)).join('') : '');
 }
 
-function renderConsec(elId,moreId,consecKey,amtKey,label,stocks) {
-  const sorted=stocks.filter(s=>s[consecKey]>0).sort((a,b)=>b[consecKey]-a[consecKey]);
-  const color=label==='외인'?'#3B7BF6':'#F5A623';
+function renderConsec(elId, moreId, consecKey, amtKey, label, stocks) {
+  const sorted = stocks.filter(s=>s[consecKey]>0).sort((a,b)=>b[consecKey]-a[consecKey]);
+  const color  = label==='외인'?'#3B7BF6':'#F5A623';
   function mkRow(s,i) {
     const up=s.change>=0;
     return `<div class="list-item" onclick="openStockModal('${s.code}')">
@@ -583,54 +614,50 @@ function renderConsec(elId,moreId,consecKey,amtKey,label,stocks) {
       </div>
     </div>`;
   }
-  document.getElementById(elId).innerHTML=sorted.slice(0,10).length
+  document.getElementById(elId).innerHTML = sorted.slice(0,10).length
     ? sorted.slice(0,10).map((s,i)=>mkRow(s,i)).join('')
     : '<div class="empty">데이터 없음</div>';
-  if(moreId) document.getElementById(moreId).innerHTML=sorted.slice(10,50).map((s,i)=>mkRow(s,i+10)).join('');
+  if(moreId)
+    document.getElementById(moreId).innerHTML = sorted.slice(10,50).map((s,i)=>mkRow(s,i+10)).join('');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    TAB 2: 섹터
-   ★ G.sectors 직접 사용 (KIS FHKUP03500100)
-   ★ 기존 groupBySector(stocks) 완전 제거
-     → "기타 27조" 버그 원인이었음
-   ★ tr_amt 단위: 백만원 → fmtSecAmt() 변환
-   ★ KOSPI / KOSDAQ 시장 필터 추가
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function setSectorMkt(m) {
-  _secMkt=m;
+  _secMkt = m;
   document.querySelectorAll('.mkt-tab').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   renderTab2();
 }
 
 function getSectorList() {
-  const EXCL=new Set(['0001','1001','0002','0003','0004','0028']);
-  let list=(G?.sectors||[]).filter(s=>!EXCL.has(s.iscd));
-  if(_secMkt!=='all') list=list.filter(s=>s.mkt_type===_secMkt);
+  const EXCL = new Set(['0001','1001','0002','0003','0004','0028']);
+  let list = (G?.sectors||[]).filter(s=>!EXCL.has(s.iscd));
+  if(_secMkt!=='all') list = list.filter(s=>s.mkt_type===_secMkt);
   return list;
 }
 
 function renderTab2() {
-  const date=G?.date||'-';
-  document.getElementById('sectorDateLabel').textContent=`${date} 기준`;
-  const sectors=getSectorList();
+  const date    = G?.date||'-';
+  const sectors = getSectorList();
+  document.getElementById('sectorDateLabel').textContent = `${date} 기준`;
 
   if(!sectors.length) {
-    const hasAny=(G?.sectors||[]).length>0;
-    document.getElementById('hmGrid').innerHTML=
-      `<div class="empty" style="grid-column:span 3">${hasAny?_secMkt+' 업종 데이터 없음':'Run workflow 후 확인해주세요<br><span class="t3 fs10">섹터 데이터가 아직 없습니다</span>'}</div>`;
-    document.getElementById('secList').innerHTML='';
+    document.getElementById('hmGrid').innerHTML =
+      `<div class="empty" style="grid-column:span 3">섹터 데이터 없음</div>`;
+    document.getElementById('secList').innerHTML = '';
     return;
   }
 
-  /* 히트맵: 등락률 절댓값 상위 12개 */
-  const hmTop=[...sectors].sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,12);
-  document.getElementById('hmGrid').innerHTML=hmTop.map(sec=>{
-    const up=sec.change>=0,inten=Math.min(Math.abs(sec.change)/6,1);
+  const hmTop = [...sectors].sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,12);
+  document.getElementById('hmGrid').innerHTML = hmTop.map(sec=>{
+    const up=sec.change>=0, inten=Math.min(Math.abs(sec.change)/6,1);
     const base=up?'14,122,78':'180,30,50';
     const bg=`rgba(${base},${(0.22+inten*0.55).toFixed(2)})`;
     const idx=sectors.indexOf(sec);
-    const mk=sec.mkt_type==='KOSDAQ'?' <span style="font-size:7.5px;opacity:.65">Q</span>':' <span style="font-size:7.5px;opacity:.65">K</span>';
+    const mk=sec.mkt_type==='KOSDAQ'
+      ?'<span style="font-size:7.5px;opacity:.65"> Q</span>'
+      :'<span style="font-size:7.5px;opacity:.65"> K</span>';
     return `<div class="hm-c" style="background:${bg};border:1px solid rgba(${base},.35)" onclick="openSecModal(${idx})">
       <div class="hm-n">${sec.name}${mk}</div>
       <div class="hm-ch">${sec.change>=0?'+':''}${sec.change.toFixed(2)}%</div>
@@ -638,14 +665,14 @@ function renderTab2() {
     </div>`;
   }).join('');
 
-  /* 섹터 바 리스트: 등락률 순 */
-  const sorted=[...sectors].sort((a,b)=>b.change-a.change);
-  const maxAbs=Math.max(...sorted.map(s=>Math.abs(s.change)),1);
-  document.getElementById('secList').innerHTML=sorted.map((sec,i)=>{
-    const up=sec.change>=0,pct=Math.abs(sec.change)/maxAbs*100,idx=sectors.indexOf(sec);
+  const sorted = [...sectors].sort((a,b)=>b.change-a.change);
+  const maxAbs = Math.max(...sorted.map(s=>Math.abs(s.change)),1);
+  document.getElementById('secList').innerHTML = sorted.map((sec,i)=>{
+    const up=sec.change>=0, pct=Math.abs(sec.change)/maxAbs*100;
+    const idx=sectors.indexOf(sec);
     const mk=sec.mkt_type==='KOSDAQ'
-      ? '<span class="badge mkt-q" style="font-size:7px;padding:1px 3px">Q</span>'
-      : '<span class="badge mkt-k" style="font-size:7px;padding:1px 3px">K</span>';
+      ?'<span class="badge mkt-q" style="font-size:7px;padding:1px 3px">Q</span>'
+      :'<span class="badge mkt-k" style="font-size:7px;padding:1px 3px">K</span>';
     return `<div class="sec-item" onclick="openSecModal(${idx})">
       <div class="sec-rk">${i+1}</div>
       <div class="sec-nm">${sec.name}</div>
@@ -657,32 +684,34 @@ function renderTab2() {
   }).join('');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    TAB 3: 신고가
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function switchNH(mode) {
-  _nhMode=mode;
-  document.getElementById('nhHBtn').className='nh-tab '+(mode==='h'?'hi':'');
-  document.getElementById('nhLBtn').className='nh-tab '+(mode==='l'?'lo':'');
+  _nhMode = mode;
+  document.getElementById('nhHBtn').className = 'nh-tab '+(mode==='h'?'hi':'');
+  document.getElementById('nhLBtn').className = 'nh-tab '+(mode==='l'?'lo':'');
   renderTab3();
 }
 
 function renderTab3() {
-  const stocks=G?.stocks||[], date=G?.date||'-';
-  document.getElementById('nhDateLabel').textContent=`${date} 기준`;
-  let data,title;
-  if(_nhMode==='h'){
-    data=stocks.filter(s=>s.nh_flag&&s.nh_flag!=='').sort((a,b)=>(b.nh_ratio||0)-(a.nh_ratio||0));
-    title='52주 신고가 근접 종목';
+  const stocks = G?.stocks||[], date=G?.date||'-';
+  document.getElementById('nhDateLabel').textContent = `${date} 기준`;
+  let data, title;
+  if(_nhMode==='h') {
+    data  = stocks.filter(s=>s.nh_flag&&s.nh_flag!=='').sort((a,b)=>(b.nh_ratio||0)-(a.nh_ratio||0));
+    title = '52주 신고가 근접 종목';
   } else {
-    data=stocks.filter(s=>s.low52>0&&s.price/s.low52*100<=110).sort((a,b)=>(a.price/a.low52)-(b.price/b.low52));
-    title='52주 신저가 근접 종목';
+    data  = stocks.filter(s=>s.low52>0&&s.price/s.low52*100<=110).sort((a,b)=>(a.price/a.low52)-(b.price/b.low52));
+    title = '52주 신저가 근접 종목';
   }
-  document.getElementById('nhCardT').textContent=`${title} (${data.length}개)`;
-  document.getElementById('nhList').innerHTML=data.length
+  document.getElementById('nhCardT').textContent = `${title} (${data.length}개)`;
+  document.getElementById('nhList').innerHTML = data.length
     ? data.map((s,i)=>{
-        const up=s.change>=0,pc=phaseColor(s.phase_key);
-        const ratio=_nhMode==='h'?`고가 대비 ${s.nh_ratio||0}%`:`저가 대비 ${(s.price/s.low52*100).toFixed(1)}%`;
+        const up=s.change>=0, pc=phaseColor(s.phase_key);
+        const ratio=_nhMode==='h'
+          ?`고가 대비 ${s.nh_ratio||0}%`
+          :`저가 대비 ${(s.price/s.low52*100).toFixed(1)}%`;
         return `<div class="list-item" onclick="openStockModal('${s.code}')">
           <div class="li-no">${i+1}</div>
           <div class="li-info">
@@ -699,36 +728,49 @@ function renderTab3() {
           </div>
         </div>`;
       }).join('')
-    : `<div class="empty">해당 종목 없음<br><span class="t3 fs10">${date} 기준 수집 종목 중</span></div>`;
+    : `<div class="empty">해당 종목 없음<br><span class="t3 fs10">${date} 기준</span></div>`;
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    TAB 4: Phase
-═══════════════════════════════════════ */
-const P_CHIPS=[{k:'all',l:'전체'},{k:'golden',l:'⭐ GOLDEN'},{k:'p2',l:'🟢 P2'},{k:'p1',l:'🔵 P1 매집'},{k:'p3',l:'🔴 P3 경고'}];
+═══════════════════════════════════ */
+const P_CHIPS = [
+  {k:'all',   l:'전체'},
+  {k:'golden',l:'⭐ GOLDEN'},
+  {k:'p2',    l:'🟢 P2'},
+  {k:'p1',    l:'🔵 P1 매집'},
+  {k:'p3',    l:'🔴 P3 경고'},
+];
 
 function renderTab4() {
-  const stocks=G?.stocks||[], ps=G?.phase_stats||{}, date=G?.date||'-';
-  document.getElementById('phaseDateLabel').textContent=`${date} 기준`;
-  document.getElementById('phaseStatGrid').innerHTML=[
+  const stocks = G?.stocks||[], ps=G?.phase_stats||{}, date=G?.date||'-';
+  document.getElementById('phaseDateLabel').textContent = `${date} 기준`;
+
+  document.getElementById('phaseStatGrid').innerHTML = [
     {l:'⭐ GOLDEN',v:ps.golden||0,c:'#F5A623'},
-    {l:'🟢 P2 상승',v:ps.p2||0,c:'#10D98A'},
-    {l:'🔵 P1 매집',v:ps.p1||0,c:'#3B7BF6'},
-    {l:'🔴 P3 경고',v:ps.p3||0,c:'#FF4D6D'},
+    {l:'🟢 P2 상승',v:ps.p2||0,  c:'#10D98A'},
+    {l:'🔵 P1 매집',v:ps.p1||0,  c:'#3B7BF6'},
+    {l:'🔴 P3 경고',v:ps.p3||0,  c:'#FF4D6D'},
   ].map(s=>`<div class="stat-c" style="border-color:${s.c}22">
     <div class="stat-l">${s.l}</div>
     <div class="stat-v" style="color:${s.c}">${s.v}</div>
     <div class="stat-s">종목 (${date})</div>
   </div>`).join('');
-  document.getElementById('pChips').innerHTML=P_CHIPS.map(c=>
+
+  document.getElementById('pChips').innerHTML = P_CHIPS.map(c=>
     `<button class="p-chip ${c.k===_pFilter?'on':''}" onclick="setPF('${c.k}')">${c.l}</button>`
   ).join('');
-  const filtered=_pFilter==='all'?stocks.filter(s=>s.phase):stocks.filter(s=>s.phase_key===_pFilter);
-  const lbl=P_CHIPS.find(c=>c.k===_pFilter)?.l||'';
-  document.getElementById('phaseCardT').textContent=(_pFilter==='all'?'전체 Phase 신호':lbl)+` (${filtered.length}개)`;
-  document.getElementById('phaseList').innerHTML=filtered.length
+
+  const filtered = _pFilter==='all'
+    ? stocks.filter(s=>s.phase)
+    : stocks.filter(s=>s.phase_key===_pFilter);
+  const lbl = P_CHIPS.find(c=>c.k===_pFilter)?.l||'';
+  document.getElementById('phaseCardT').textContent =
+    (_pFilter==='all'?'전체 Phase 신호':lbl)+` (${filtered.length}개)`;
+
+  document.getElementById('phaseList').innerHTML = filtered.length
     ? filtered.map((s,i)=>{
-        const up=s.change>=0,pc=phaseColor(s.phase_key);
+        const up=s.change>=0, pc=phaseColor(s.phase_key);
         return `<div class="list-item" onclick="openStockModal('${s.code}')">
           <div class="li-no">${i+1}</div>
           <div class="li-info">
@@ -747,23 +789,28 @@ function renderTab4() {
     : `<div class="empty">해당 신호 없음<br><span class="t3 fs10">${date} 기준</span></div>`;
 }
 
-function setPF(k){_pFilter=k;renderTab4();}
+function setPF(k) { _pFilter=k; renderTab4(); }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    모달: 지수 상세
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function openIdxModal(name) {
-  const idx=(G?.indices||[]).find(i=>i.name===name);
+  const idx = (G?.indices||[]).find(i=>i.name===name);
   if(!idx) return;
   const up=idx.change>=0, date=G?.date||'-';
-  document.getElementById('idxModalTitle').textContent=`${name} 상세`;
-  document.getElementById('idxModalSub').textContent=`${date} 기준 · 거래대금 ${fmtSecAmt((idx.tr_amt||0)/1_000_000)}`;
-  const mktStocks=(G?.stocks||[]).filter(s=>name==='KSP200'?true:s.market===name);
-  const fn=mktStocks.reduce((a,s)=>a+(s.foreign_today||0),0);
-  const inn=mktStocks.reduce((a,s)=>a+(s.inst_today||0),0);
-  const iv=mktStocks.reduce((a,s)=>a+(s.indiv_today||0),0);
-  const relStocks=[...mktStocks].sort((a,b)=>(b.tr_val||0)-(a.tr_val||0)).slice(0,5);
-  document.getElementById('idxModalBody').innerHTML=`
+  document.getElementById('idxModalTitle').textContent = `${name} 상세`;
+  document.getElementById('idxModalSub').textContent   =
+    `${date} 기준 · 거래대금 ${fmtSecAmt((idx.tr_amt||0)/1_000_000)}`;
+
+  const mktStocks = (G?.stocks||[]).filter(s=>
+    name==='KOSPI200'?true:s.market===name
+  );
+  const fn  = mktStocks.reduce((a,s)=>a+(s.foreign_today||0),0);
+  const inn = mktStocks.reduce((a,s)=>a+(s.inst_today||0),0);
+  const iv  = mktStocks.reduce((a,s)=>a+(s.indiv_today||0),0);
+  const relStocks = [...mktStocks].sort((a,b)=>(b.tr_val||0)-(a.tr_val||0)).slice(0,5);
+
+  document.getElementById('idxModalBody').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-t">지수 현황</div>
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
@@ -782,7 +829,7 @@ function openIdxModal(name) {
     </div>
     <div class="modal-section">
       <div class="modal-section-t">투자자별 수급 (수집 종목 합산)</div>
-      ${(fn||inn||iv)?(() => {
+      ${(fn||inn||iv) ? (()=>{
         const rows=[{nm:'외국인',v:fn},{nm:'기관',v:inn},{nm:'개인',v:iv}];
         const maxA=Math.max(...rows.map(r=>Math.abs(r.v)),1);
         return rows.map(r=>{
@@ -793,7 +840,7 @@ function openIdxModal(name) {
             <div class="sup-val ${ru?'up':'dn'}">${fmtAmt(r.v)}</div>
           </div>`;
         }).join('');
-      })():'<div class="empty fs10">수급 데이터 없음</div>'}
+      })() : '<div class="empty fs10">수급 데이터 없음</div>'}
     </div>
     <div class="modal-section">
       <div class="modal-section-t">거래대금 상위 종목</div>
@@ -815,18 +862,19 @@ function openIdxModal(name) {
   document.getElementById('idxModal').classList.remove('hidden');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    모달: 종목 상세
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function openStockModal(code) {
-  const s=(G?.stocks||[]).find(s=>s.code===code);
+  const s = (G?.stocks||[]).find(s=>s.code===code);
   if(!s) return;
-  const up=s.change>=0,pc=phaseColor(s.phase_key),date=G?.date||'-';
-  document.getElementById('stkModalTitle').textContent=s.name;
-  document.getElementById('stkModalSub').textContent=`${s.market} · ${s.sector||'-'} · ${date} 기준`;
+  const up=s.change>=0, pc=phaseColor(s.phase_key), date=G?.date||'-';
+  document.getElementById('stkModalTitle').textContent = s.name;
+  document.getElementById('stkModalSub').textContent   =
+    `${s.market} · ${s.sector||'-'} · ${date} 기준`;
 
-  function spRow(label,key) {
-    const d=(s.supply_periods||{})[key]||{};
+  function spRow(label, key) {
+    const d = (s.supply_periods||{})[key]||{};
     return `<div style="padding:7px 0;border-bottom:1px solid var(--bd)">
       <div style="font-size:9.5px;color:var(--t3);margin-bottom:4px;font-weight:600">${label}</div>
       <div style="display:flex;gap:10px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
@@ -837,27 +885,64 @@ function openStockModal(code) {
     </div>`;
   }
 
-  const phaseHtml=s.phase?`
+  const phaseHtml = s.phase ? `
     <div class="modal-section">
       <div class="modal-section-t">📡 Phase 신호 분석</div>
       <div style="display:inline-block;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;color:${pc};background:${pc}18;border:1px solid ${pc}35;margin-bottom:10px">${s.phase}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         ${[
-          {l:'무게수 비율',v:(s.muges_ratio||1).toFixed(2),d:s.muges_ratio<0.7?'매집중':s.muges_ratio>2?'분산위험':'보통'},
-          {l:'SMP',v:(s.smp>=0?'+':'')+s.smp+'%',d:s.smp>0?'기관+외인 순매수':'순매도'},
+          {l:'SMP',       v:(s.smp>=0?'+':'')+s.smp+'%', d:s.smp>0?'기관+외인 순매수':'순매도'},
+          {l:'외인 연속', v:(s.f_consec||0)+'일',          d:s.f_consec>=5?'강한 매집':s.f_consec>=3?'매집 진행':''},
+          {l:'기관 연속', v:(s.i_consec||0)+'일',          d:''},
           {l:'거래량 배수',v:(s.vol_ratio||1).toFixed(1)+'x',d:s.vol_ratio>=2?'거래 폭발':'보통'},
-          {l:'외인 연속',v:(s.f_consec||0)+'일',d:s.f_consec>=5?'강한 매집':s.f_consec>=3?'매집 진행':''},
-          {l:'기관 연속',v:(s.i_consec||0)+'일',d:''},
-          {l:'OBV',v:s.obv_above_ma?'MA 상향돌파':'MA 하향',d:''},
         ].map(m=>`<div style="background:rgba(255,255,255,.04);border-radius:var(--r8);padding:8px 10px">
           <div style="font-size:9.5px;color:var(--t3);margin-bottom:3px">${m.l}</div>
           <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--t1)">${m.v}</div>
           ${m.d?`<div style="font-size:9px;color:var(--t2);margin-top:2px">${m.d}</div>`:''}
         </div>`).join('')}
       </div>
-    </div>`:'';
+    </div>` : '';
 
-  document.getElementById('stkModalBody').innerHTML=`
+  // 일별 수급 테이블
+  const daily = s.daily_data||[];
+  const dailyHtml = `
+    <div class="modal-section">
+      <div class="modal-section-t">일별 수급 (최근 2주)</div>
+      ${daily.length ? `
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="daily-table">
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>종가</th>
+              <th>외국인</th>
+              <th>기관</th>
+              <th>개인</th>
+              <th>Phase</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${daily.map(d=>{
+              const pc2 = phaseColor(d.phase_key);
+              const dt  = (d.date||'').replace(/(\d{4})(\d{2})(\d{2})/,'$2/$3');
+              const fu  = d.famt>=0, iu=d.iamt>=0, pu=d.pamt>=0;
+              return `<tr>
+                <td>${dt}</td>
+                <td>${d.close ? fmtN(d.close) : '-'}</td>
+                <td style="color:${fu?'var(--up)':'var(--dn)'}">${fmtAmtBil(d.famt)}</td>
+                <td style="color:${iu?'var(--up)':'var(--dn)'}">${fmtAmtBil(d.iamt)}</td>
+                <td style="color:${pu?'var(--up)':'var(--dn)'}">${fmtAmtBil(d.pamt)}</td>
+                <td>${d.phase&&d.phase!=='-'
+                  ?`<span style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;color:${pc2};background:${pc2}18">${d.phase}</span>`
+                  :'<span style="color:var(--t3)">-</span>'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div class="empty fs10">일별 데이터 없음</div>'}
+    </div>`;
+
+  document.getElementById('stkModalBody').innerHTML = `
     <div class="modal-section">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:4px 0 10px">
         <div>
@@ -883,43 +968,41 @@ function openStockModal(code) {
     <div class="modal-section">
       <div class="modal-section-t">종목 정보</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
-        <div class="t3">시장</div><div style="text-align:right">${mktBadge(s.market)}</div>
-        <div class="t3">업종</div><div style="text-align:right">${s.sector||'-'}</div>
-        <div class="t3">시가총액</div><div style="text-align:right;font-family:var(--mono)">${s.mktcap && s.mktcap > 0 ? fmtAmt(s.mktcap * 1e8) : '-'}</div>
-        <div class="t3">거래량</div><div style="text-align:right;font-family:var(--mono)">${fmtN(s.volume)}</div>
-        <div class="t3">거래대금</div><div style="text-align:right;font-family:var(--mono)">${fmtAmt(s.tr_val||0)}</div>
+        <div class="t3">시장</div>      <div style="text-align:right">${mktBadge(s.market)}</div>
+        <div class="t3">업종</div>      <div style="text-align:right">${s.sector||'-'}</div>
+        <div class="t3">시가총액</div>  <div style="text-align:right;font-family:var(--mono)">${s.mktcap&&s.mktcap>0?fmtAmt(s.mktcap*1e8):'-'}</div>
+        <div class="t3">거래량</div>    <div style="text-align:right;font-family:var(--mono)">${fmtN(s.volume)}</div>
+        <div class="t3">거래대금</div>  <div style="text-align:right;font-family:var(--mono)">${fmtAmt(s.tr_val||0)}</div>
+        <div class="t3">PER</div>       <div style="text-align:right;font-family:var(--mono)">${s.per>0?s.per.toFixed(1)+'배':'-'}</div>
+        <div class="t3">PBR</div>       <div style="text-align:right;font-family:var(--mono)">${s.pbr>0?s.pbr.toFixed(2)+'배':'-'}</div>
       </div>
-    </div>`;
+    </div>
+    ${dailyHtml}`;
+
   document.getElementById('stockModal').classList.remove('hidden');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    모달: 섹터 상세
-   ★ G.sectors 기반 (업종 지수 + 30일 차트)
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function openSecModal(idx) {
-  const sectors=getSectorList();
-  const sec=sectors[idx];
+  const sectors = getSectorList();
+  const sec     = sectors[idx];
   if(!sec) return;
   const up=sec.change>=0, date=G?.date||'-', cc=up?'#10D98A':'#FF4D6D';
-  document.getElementById('secModalTitle').textContent=sec.name;
-  document.getElementById('secModalSub').textContent=`${sec.mkt_type} 업종 · ${date} 기준 · ${sec.change>=0?'+':''}${sec.change.toFixed(2)}%`;
+  document.getElementById('secModalTitle').textContent = sec.name;
+  document.getElementById('secModalSub').textContent   =
+    `${sec.mkt_type} 업종 · ${date} 기준 · ${sec.change>=0?'+':''}${sec.change.toFixed(2)}%`;
 
-  const history=sec.history||[];
-  const chartHtml=history.length>=2
-    ? `<div class="chart-wrap">${makeSVGChart(history.map(h=>({v:h.close})),cc,60)}</div>
-       <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-top:2px;padding:0 2px">
-         <span>${(history[0]?.date||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3')}</span>
-         <span>${(history[history.length-1]?.date||'').replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3')}</span>
-       </div>`
-    : '<div class="empty fs10">차트 데이터 없음</div>';
-
-  const sn=(sec.name||'').replace(/\s/g,'');
-  const relStocks=(G?.stocks||[])
-    .filter(s=>{const n=(s.sector||'').replace(/\s/g,'');return n.includes(sn.slice(0,4))||sn.includes(n.slice(0,4));})
+  const sn = (sec.name||'').replace(/\s/g,'');
+  const relStocks = (G?.stocks||[])
+    .filter(s=>{
+      const n=(s.sector||'').replace(/\s/g,'');
+      return n.includes(sn.slice(0,4))||sn.includes(n.slice(0,4));
+    })
     .sort((a,b)=>(b.tr_val||0)-(a.tr_val||0)).slice(0,10);
 
-  document.getElementById('secModalBody').innerHTML=`
+  document.getElementById('secModalBody').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-t">업종 지수 현황 (${date})</div>
       <div style="display:flex;align-items:center;gap:14px;padding:8px 0 4px">
@@ -929,9 +1012,6 @@ function openSecModal(idx) {
       <div style="display:flex;gap:14px;font-size:10px;color:var(--t3)">
         <span>거래대금 ${fmtSecAmt(sec.tr_amt)}</span><span>${sec.mkt_type}</span>
       </div>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-t">30일 업종 지수 추이</div>${chartHtml}
     </div>
     <div class="modal-section">
       <div class="modal-section-t">거래대금 상위 종목 (${date})</div>
@@ -955,15 +1035,20 @@ function openSecModal(idx) {
   document.getElementById('secModal').classList.remove('hidden');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    모달 공통
-═══════════════════════════════════════ */
-function closeModal(id,e){if(e?.target===document.getElementById(id))document.getElementById(id).classList.add('hidden');}
-function closeModalDirect(id){document.getElementById(id).classList.add('hidden');}
+═══════════════════════════════════ */
+function closeModal(id,e) {
+  if(e?.target===document.getElementById(id))
+    document.getElementById(id).classList.add('hidden');
+}
+function closeModalDirect(id) {
+  document.getElementById(id).classList.add('hidden');
+}
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    탭 전환
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function switchTab(idx) {
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===idx));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.n===idx));
@@ -978,28 +1063,28 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>swit
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.n)));
 document.querySelectorAll('[data-goto]').forEach(el=>el.addEventListener('click',()=>switchTab(el.dataset.goto)));
 
-function toggleMore(id){
+function toggleMore(id) {
   const el=document.getElementById(id);
   const open=el.classList.toggle('open');
   el.previousElementSibling.textContent=open?'▴ 접기':'▾ 더보기';
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    티커
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function renderTicker() {
-  const items=[
+  const items = [
     ...(G?.indices||[]).map(i=>({n:i.name,v:fmtN(i.value),c:i.change,up:i.change>=0})),
     ...(G?.stocks||[]).slice(0,15).map(s=>({n:s.name,v:fmtN(s.price)+'원',c:s.change,up:s.change>=0})),
   ];
-  document.getElementById('tickerEl').innerHTML=items.concat(items).map(t=>
+  document.getElementById('tickerEl').innerHTML = items.concat(items).map(t=>
     `<div class="tk"><span class="tk-n">${t.n}</span>&nbsp;<span class="${t.up?'up':'dn'}">${t.v} ${fmtP(t.c)}</span></div>`
   ).join('');
 }
 
-/* ═══════════════════════════════════════
+/* ═══════════════════════════════════
    시계 & 장중 상태
-═══════════════════════════════════════ */
+═══════════════════════════════════ */
 function updateClock() {
   const kst=new Date(Date.now()+9*3600000);
   const hh=String(kst.getUTCHours()).padStart(2,'0');
@@ -1008,24 +1093,27 @@ function updateClock() {
   document.getElementById('clockEl').textContent=`${hh}:${mm}:${ss}`;
   const t=kst.getUTCHours()*60+kst.getUTCMinutes(), dow=kst.getUTCDay();
   const open=t>=545&&t<=930&&dow>0&&dow<6;
-  const dot=document.getElementById('liveDot'),lbl=document.getElementById('liveLabel'),pill=document.getElementById('livePill');
-  if(open){
+  const dot=document.getElementById('liveDot');
+  const lbl=document.getElementById('liveLabel');
+  const pill=document.getElementById('livePill');
+  if(open) {
     dot.style.cssText='background:var(--up);animation:pulse 1.8s infinite';
-    lbl.textContent='LIVE';lbl.style.color='var(--up)';
+    lbl.textContent='LIVE'; lbl.style.color='var(--up)';
     pill.style.cssText='background:rgba(16,217,138,.1);border-color:rgba(16,217,138,.25)';
   } else {
     dot.style.cssText='background:var(--fl)';
-    lbl.textContent='마감';lbl.style.color='var(--fl)';
+    lbl.textContent='마감'; lbl.style.color='var(--fl)';
     pill.style.cssText='background:rgba(107,122,153,.1);border-color:rgba(107,122,153,.2)';
   }
 }
-setInterval(updateClock,1000); updateClock();
+setInterval(updateClock,1000);
+updateClock();
 
 setInterval(()=>{
   const kst=new Date(Date.now()+9*3600000);
   const t=kst.getUTCHours()*60+kst.getUTCMinutes(), dow=kst.getUTCDay();
   if(t>=545&&t<=935&&dow>0&&dow<6) loadData();
-},5*60*1000);
+}, 5*60*1000);
 
 loadData();
 </script>
