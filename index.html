@@ -864,18 +864,37 @@ function openStockModal(code){
   document.getElementById('stockModal').classList.remove('hidden');
 }
 
-function openSecModal(idx){
-  const sectors=getSectorList(),sec=sectors[idx];
-  if(!sec)return;
-  const up=sec.change>=0,date=G?.date||'-';
-  document.getElementById('secModalTitle').textContent=sec.name;
-  document.getElementById('secModalSub').textContent=
-    `${sec.mkt_type} 업종 · ${date} 기준 · ${sec.change>=0?'+':''}${sec.change.toFixed(2)}%`;
-  const sn=(sec.name||'').replace(/\s/g,'');
-  const relStocks=(G?.stocks||[])
-    .filter(s=>{const n=(s.sector||'').replace(/\s/g,'');return n.includes(sn.slice(0,4))||sn.includes(n.slice(0,4));})
-    .sort((a,b)=>(b.tr_val||0)-(a.tr_val||0)).slice(0,10);
-  document.getElementById('secModalBody').innerHTML=`
+function openSecModal(idx) {
+  const sectors = getSectorList();
+  const sec     = sectors[idx];
+  if (!sec) return;
+
+  const up   = sec.change >= 0;
+  const date = G?.date || '-';
+
+  document.getElementById('secModalTitle').textContent = sec.name;
+  document.getElementById('secModalSub').textContent =
+    `${sec.mkt_type} 업종 · ${date} 기준 · ${sec.change >= 0 ? '+' : ''}${sec.change.toFixed(2)}%`;
+
+  // ★ sector_stock_map 에서 정확한 종목 코드 목록 가져오기
+  const sectorMap  = G?.sector_stock_map || {};
+  const stockCodes = sectorMap[sec.iscd] || [];
+  const allStocks  = G?.stocks || [];
+
+  let relStocks = allStocks
+    .filter(s => stockCodes.includes(s.code))
+    .sort((a, b) => (b.tr_val || 0) - (a.tr_val || 0))
+    .slice(0, 10);
+
+  // 매핑된 종목이 없으면 fallback: 업종명 완전 일치
+  if (!relStocks.length) {
+    relStocks = allStocks
+      .filter(s => s.sector && sec.name && s.sector.includes(sec.name.slice(0, 3)))
+      .sort((a, b) => (b.tr_val || 0) - (a.tr_val || 0))
+      .slice(0, 10);
+  }
+
+  document.getElementById('secModalBody').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-t">업종 지수 현황 (${date})</div>
       <div style="display:flex;align-items:center;gap:14px;padding:8px 0 4px">
@@ -883,19 +902,23 @@ function openSecModal(idx){
         <div style="font-family:var(--mono);font-size:13px;color:var(--${up?'up':'dn'})">${sec.change>=0?'+':''}${sec.change.toFixed(2)}%</div>
       </div>
       <div style="display:flex;gap:14px;font-size:10px;color:var(--t3)">
-        <span>거래대금 ${fmtSecAmt(sec.tr_amt)}</span><span>${sec.mkt_type}</span>
+        <span>거래대금 ${fmtSecAmt(sec.tr_amt)}</span>
+        <span>${sec.mkt_type}</span>
       </div>
     </div>
     <div class="modal-section">
-      <div class="modal-section-t">거래대금 상위 종목 (${date})</div>
+      <div class="modal-section-t">
+        거래대금 상위 종목 (${date})
+        <span style="font-weight:400;color:var(--t3)"> · ${relStocks.length}개 매칭</span>
+      </div>
       ${relStocks.length
-        ?relStocks.map((s,i)=>{
-            const su=s.change>=0;
-            return`<div class="list-item" onclick="closeModalDirect('secModal');openStockModal('${s.code}')">
+        ? relStocks.map((s, i) => {
+            const su = s.change >= 0;
+            return `<div class="list-item" onclick="closeModalDirect('secModal');openStockModal('${s.code}')">
               <div class="li-no">${i+1}</div>
               <div class="li-info">
                 <div class="li-name">${s.name} ${mktBadge(s.market)}</div>
-                <div class="li-sub t3">거래대금 ${fmtAmt(s.tr_val||0)} · 종가 ${fmtN(s.price)}원</div>
+                <div class="li-sub t3">${s.sector || ''} · ${fmtAmt(s.tr_val||0)}</div>
               </div>
               <div class="li-r">
                 <div class="li-price ${su?'up':'dn'}">${fmtN(s.price)}원</div>
@@ -903,8 +926,14 @@ function openSecModal(idx){
               </div>
             </div>`;
           }).join('')
-        :'<div class="empty fs10">매칭 종목 없음</div>'}
+        : `<div class="empty fs10">
+             매칭 종목 없음<br>
+             <span style="color:var(--t3);font-size:9px">
+               (수집 대상 154개 종목 중 해당 업종 없음)
+             </span>
+           </div>`}
     </div>`;
+
   document.getElementById('secModal').classList.remove('hidden');
 }
 
