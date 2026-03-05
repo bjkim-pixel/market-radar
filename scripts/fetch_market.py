@@ -302,7 +302,6 @@ def fetch_all_sectors(token):
 
 # ----------------------------------------
 # 3. 종목 현재가 + 기본정보
-#    TR_ID: FHKST01010100
 # ----------------------------------------
 def fetch_stock_price(token, code, default_market="KOSPI"):
     d = kis_get(
@@ -344,15 +343,11 @@ def fetch_stock_price(token, code, default_market="KOSPI"):
 
 # ----------------------------------------
 # 4. 투자자 매매동향 30일
-#    KOSDAQ 종목도 FID_COND_MRKT_DIV_CODE = "J" 고정
 # ----------------------------------------
 def fetch_stock_investor_history(token, code):
     d = kis_get(
         "/uapi/domestic-stock/v1/quotations/inquire-investor",
-        {
-            "FID_COND_MRKT_DIV_CODE": "J",
-            "FID_INPUT_ISCD":         code,
-        },
+        {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": code},
         "FHKST01010900", token
     )
     rows = d.get("output", [])
@@ -371,12 +366,12 @@ def fetch_stock_investor_history(token, code):
 
 
 # ----------------------------------------
-# 5. 일별 종가 조회 (최근 30일)
-#    TR_ID: FHKST03010100
+# 5. 일별 종가 (최근 40일)
 # ----------------------------------------
 def fetch_stock_ohlcv(token, code):
-    end_dt   = datetime.now().strftime("%Y%m%d")
-    start_dt = (datetime.now() - timedelta(days=40)).strftime("%Y%m%d")
+    kst_now  = datetime.utcnow() + timedelta(hours=9)
+    end_dt   = kst_now.strftime("%Y%m%d")
+    start_dt = (kst_now - timedelta(days=40)).strftime("%Y%m%d")
     d = kis_get(
         "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
         {
@@ -413,16 +408,25 @@ def calc_supply_periods(inv):
 
 
 # ----------------------------------------
-# 6. Phase 판정
+# 6. 매직지수
 # ----------------------------------------
-def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
-    if nh_flag and f_consec >= 3 and smp > 0:
+def calc_magic(famt, iamt, mktcap_won):
+    if mktcap_won <= 0:
+        return 0.0
+    return round((famt + iamt) / mktcap_won * 100, 4)
+
+
+# ----------------------------------------
+# 7. Phase 판정
+# ----------------------------------------
+def determine_phase(f_consec, i_consec, magic, nh_flag, obv_up):
+    if nh_flag and f_consec >= 3 and magic > 0:
         return "golden", "GOLDEN - 신고가+외인매집"
-    if f_consec >= 5 and i_consec >= 3 and smp > 1:
+    if f_consec >= 5 and i_consec >= 3 and magic > 0.01:
         return "golden", "GOLDEN - 강한 매집"
-    if smp < -2 and f_consec == 0:
+    if magic < -0.05 and f_consec == 0:
         return "p3", "P3 - 기관외인 이탈"
-    if f_consec >= 3 and smp > 0 and obv_up:
+    if f_consec >= 3 and magic > 0 and obv_up:
         return "p2", "P2 - 상승 추세"
     if f_consec >= 2 or i_consec >= 2:
         return "p1", "P1 - 매집 초기"
@@ -430,7 +434,6 @@ def determine_phase(f_consec, i_consec, smp, nh_flag, obv_up):
 
 
 def determine_daily_phase(famt, iamt):
-    """일별 단순 Phase"""
     if famt > 0 and iamt > 0:
         return "매집",  "golden"
     if famt > 0:
@@ -443,7 +446,7 @@ def determine_daily_phase(famt, iamt):
 
 
 # ----------------------------------------
-# 7. 전체 종목 수집
+# 8. 전체 종목 수집
 # ----------------------------------------
 def fetch_all_stocks(token):
     stocks = []
@@ -451,21 +454,19 @@ def fetch_all_stocks(token):
 
     for i, (code, name, default_mkt) in enumerate(MAJOR_STOCKS):
         try:
-            # 현재가 + 기본정보
             info = fetch_stock_price(token, code, default_mkt)
             time.sleep(0.07)
             if not info:
                 continue
 
-            # 투자자 30일 (KOSDAQ도 "J" 고정)
+            mktcap_won = info["mktcap"] * 1e8
+
             inv_hist = fetch_stock_investor_history(token, code)
             time.sleep(0.07)
 
-            # 일별 종가
             ohlcv = fetch_stock_ohlcv(token, code)
             time.sleep(0.07)
 
-            # 오늘 수급
             today   = inv_hist[0] if inv_hist else {}
             f_today = today.get("famt", 0)
             i_today = today.get("iamt", 0)
@@ -473,7 +474,6 @@ def fetch_all_stocks(token):
 
             supply_periods = calc_supply_periods(inv_hist)
 
-            # 연속 순매수 일수
             f_consec = 0
             for row in inv_hist:
                 if row.get("foreign", 0) > 0: f_consec += 1
@@ -484,7 +484,6 @@ def fetch_all_stocks(token):
                 if row.get("inst", 0) > 0: i_consec += 1
                 else: break
 
-            # 52주 고저가
             high52   = info["high52"]
             low52    = info["low52"]
             price    = info["price"]
@@ -495,21 +494,19 @@ def fetch_all_stocks(token):
             elif nh_ratio >= 99: nh_flag = "99%"
             elif nh_ratio >= 97: nh_flag = "97%+"
 
-            tr_val = info.get("tr_val", 1) or 1
-            smp    = round((f_today + i_today) / tr_val * 100, 2)
+            magic  = calc_magic(f_today, i_today, mktcap_won)
             obv_up = (f_today + i_today) > 0
 
             phase_key, phase = determine_phase(
-                f_consec, i_consec, smp, nh_flag, obv_up
+                f_consec, i_consec, magic, nh_flag, obv_up
             )
 
-            # 일별 수급 데이터 (최근 10 영업일)
             daily_data = []
             for row in inv_hist[:10]:
-                dt         = row.get("date", "")
-                famt       = row.get("famt", 0)
-                iamt       = row.get("iamt", 0)
-                pamt       = row.get("pamt", 0)
+                dt    = row.get("date", "")
+                famt  = row.get("famt", 0)
+                iamt  = row.get("iamt", 0)
+                pamt  = row.get("pamt", 0)
                 d_phase, d_key = determine_daily_phase(famt, iamt)
                 daily_data.append({
                     "date":      dt,
@@ -517,6 +514,7 @@ def fetch_all_stocks(token):
                     "famt":      famt,
                     "iamt":      iamt,
                     "pamt":      pamt,
+                    "magic":     calc_magic(famt, iamt, mktcap_won),
                     "phase":     d_phase,
                     "phase_key": d_key,
                 })
@@ -544,7 +542,7 @@ def fetch_all_stocks(token):
                 "supply_periods": supply_periods,
                 "f_consec":       f_consec,
                 "i_consec":       i_consec,
-                "smp":            smp,
+                "magic":          magic,
                 "obv_above_ma":   obv_up,
                 "vol_ratio":      1.0,
                 "phase_key":      phase_key,
@@ -563,7 +561,7 @@ def fetch_all_stocks(token):
 
 
 # ----------------------------------------
-# 8. 집계
+# 9. 집계
 # ----------------------------------------
 def calc_market_supply(stocks):
     return {
@@ -578,32 +576,218 @@ def build_summary(indices, stocks, market_supply, phase_stats):
     for idx in indices[:2]:
         sym = "+" if idx["change"] >= 0 else ""
         lines.append(f"{idx['name']} {sym}{idx['change']:.2f}% ({idx['value']:,.0f})")
-
     fn  = market_supply.get("foreign_net", 0)
     inn = market_supply.get("inst_net",    0)
     iv  = market_supply.get("indiv_net",   0)
-
     def amt_str(v):
         a = abs(v)
         s = f"{a/1e8:.0f}억" if a >= 1e8 else f"{a/1e4:.0f}만"
         return ("+" if v >= 0 else "-") + s
-
     lines.append(f"외국인 {amt_str(fn)} / 기관 {amt_str(inn)} / 개인 {amt_str(iv)}")
-
     if phase_stats.get("golden"):
         lines.append(f"GOLDEN {phase_stats['golden']}개 / P1매집 {phase_stats.get('p1', 0)}개")
-
     nh = [s for s in stocks if s.get("nh_flag")]
     if nh:
         lines.append(f"신고가 근접 {len(nh)}종목 / 대표: {nh[0]['name']}")
-
     return lines
+
+
+# ----------------------------------------
+# 10. 텔레그램
+# ----------------------------------------
+def send_telegram(token, chat_id, message):
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": message, "parse_mode": "HTML"},
+            timeout=10
+        )
+        if not r.ok:
+            print(f"[telegram] 오류: {r.text[:200]}")
+        else:
+            print("[telegram] 전송 완료")
+    except Exception as e:
+        print(f"[telegram] 전송 실패: {e}")
+
+
+def build_telegram_messages(indices, sectors, stocks, market_supply, phase_stats, now_str):
+    """사이트 주요 내용을 섹션별 메시지 리스트로 반환"""
+
+    def fmt(v):
+        a = abs(v)
+        s = f"{a/1e8:.0f}억" if a >= 1e8 else f"{a/1e4:.0f}만"
+        return ("+" if v >= 0 else "-") + s
+
+    def arrow(v):
+        return "📈" if v >= 0 else "📉"
+
+    def pct(v):
+        return f"{'+' if v>=0 else ''}{v:.2f}%"
+
+    messages = []
+
+    # ── 메시지 1: 헤더 + 지수 + 시장 수급 ──────────────────
+    idx_lines = "\n".join(
+        f"  {arrow(i['change'])} <b>{i['name']}</b>  "
+        f"{i['value']:,.0f}  <b>{pct(i['change'])}</b>  "
+        f"(상승 {i.get('ascn',0)} / 하락 {i.get('down',0)})"
+        for i in indices
+    )
+    ms = market_supply
+    fn, inn, iv = ms.get('foreign_net',0), ms.get('inst_net',0), ms.get('indiv_net',0)
+
+    msg1 = (
+        f"📡 <b>마켓레이더  |  {now_str} KST</b>\n"
+        f"{'━'*30}\n\n"
+        f"📊 <b>[ 지수 ]</b>\n"
+        f"{idx_lines}\n\n"
+        f"💰 <b>[ 시장 수급 ]</b>\n"
+        f"  외국인  <b>{fmt(fn)}</b>\n"
+        f"  기관    <b>{fmt(inn)}</b>\n"
+        f"  개인    <b>{fmt(iv)}</b>\n"
+    )
+    messages.append(msg1)
+
+    # ── 메시지 2: Phase 신호 종목 ──────────────────────────
+    golden = [s for s in stocks if s.get("phase_key") == "golden"]
+    p2     = [s for s in stocks if s.get("phase_key") == "p2"]
+    p1     = [s for s in stocks if s.get("phase_key") == "p1"]
+    p3     = [s for s in stocks if s.get("phase_key") == "p3"]
+
+    def phase_rows(lst, max_n=5):
+        rows = []
+        for s in lst[:max_n]:
+            mk  = "Q" if s["market"] == "KOSDAQ" else "K"
+            nh  = f" 🚀{s['nh_flag']}" if s.get("nh_flag") else ""
+            rows.append(
+                f"  • {s['name']}[{mk}]{nh}  "
+                f"{pct(s['change'])}  "
+                f"매직 {s['magic']:+.4f}%  "
+                f"외인{s['f_consec']}일"
+            )
+        if len(lst) > max_n:
+            rows.append(f"  ... 외 {len(lst)-max_n}개")
+        return "\n".join(rows) if rows else "  없음"
+
+    ps = phase_stats
+    msg2 = (
+        f"📡 <b>[ Phase 신호 ]</b>\n"
+        f"⭐ GOLDEN {ps.get('golden',0)}개  "
+        f"🟢 P2 {ps.get('p2',0)}개  "
+        f"🔵 P1 {ps.get('p1',0)}개  "
+        f"🔴 P3 {ps.get('p3',0)}개\n\n"
+        f"⭐ <b>GOLDEN</b>\n{phase_rows(golden)}\n\n"
+        f"🟢 <b>P2 상승추세</b>\n{phase_rows(p2)}\n\n"
+        f"🔵 <b>P1 매집초기</b>\n{phase_rows(p1)}\n\n"
+        f"🔴 <b>P3 이탈경고</b>\n{phase_rows(p3, 3)}\n"
+    )
+    messages.append(msg2)
+
+    # ── 메시지 3: 외인/기관 Top 매수 ──────────────────────
+    f_buy = sorted([s for s in stocks if s.get("foreign_today",0)>0],
+                   key=lambda x: x["foreign_today"], reverse=True)[:5]
+    i_buy = sorted([s for s in stocks if s.get("inst_today",0)>0],
+                   key=lambda x: x["inst_today"], reverse=True)[:5]
+    f_sell= sorted([s for s in stocks if s.get("foreign_today",0)<0],
+                   key=lambda x: x["foreign_today"])[:3]
+    i_sell= sorted([s for s in stocks if s.get("inst_today",0)<0],
+                   key=lambda x: x["inst_today"])[:3]
+
+    def trader_rows(lst, key):
+        rows = []
+        for s in lst:
+            mk = "Q" if s["market"]=="KOSDAQ" else "K"
+            rows.append(
+                f"  • {s['name']}[{mk}]  "
+                f"<b>{fmt(s[key])}</b>  {pct(s['change'])}"
+            )
+        return "\n".join(rows) if rows else "  없음"
+
+    msg3 = (
+        f"💰 <b>[ 외국인 수급 ]</b>\n"
+        f"▲ 상위 매수\n{trader_rows(f_buy,'foreign_today')}\n\n"
+        f"▽ 상위 매도\n{trader_rows(f_sell,'foreign_today')}\n\n"
+        f"🏛️ <b>[ 기관 수급 ]</b>\n"
+        f"▲ 상위 매수\n{trader_rows(i_buy,'inst_today')}\n\n"
+        f"▽ 상위 매도\n{trader_rows(i_sell,'inst_today')}\n"
+    )
+    messages.append(msg3)
+
+    # ── 메시지 4: 외인/기관 연속 순매수 + 신고가 ───────────
+    f_consec_list = sorted([s for s in stocks if s.get("f_consec",0)>=3],
+                            key=lambda x: x["f_consec"], reverse=True)[:5]
+    i_consec_list = sorted([s for s in stocks if s.get("i_consec",0)>=3],
+                            key=lambda x: x["i_consec"], reverse=True)[:5]
+    nh_list       = [s for s in stocks if s.get("nh_flag")]
+    nh_list       = sorted(nh_list, key=lambda x: x.get("nh_ratio",0), reverse=True)[:5]
+
+    def consec_rows(lst, key):
+        rows = []
+        for s in lst:
+            mk = "Q" if s["market"]=="KOSDAQ" else "K"
+            rows.append(
+                f"  • {s['name']}[{mk}]  "
+                f"<b>{s[key]}일 연속</b>  {pct(s['change'])}"
+            )
+        return "\n".join(rows) if rows else "  없음"
+
+    def nh_rows(lst):
+        rows = []
+        for s in lst:
+            mk  = "Q" if s["market"]=="KOSDAQ" else "K"
+            flag= s.get("nh_flag","")
+            rows.append(
+                f"  • {s['name']}[{mk}]  "
+                f"<b>{flag}</b>  "
+                f"고가대비 {s.get('nh_ratio',0)}%  {pct(s['change'])}"
+            )
+        return "\n".join(rows) if rows else "  없음"
+
+    msg4 = (
+        f"🔵 <b>[ 외인 연속 순매수 3일↑ ]</b>\n"
+        f"{consec_rows(f_consec_list,'f_consec')}\n\n"
+        f"🟡 <b>[ 기관 연속 순매수 3일↑ ]</b>\n"
+        f"{consec_rows(i_consec_list,'i_consec')}\n\n"
+        f"🚀 <b>[ 52주 신고가 근접 ]</b>  ({len(nh_list)}종목)\n"
+        f"{nh_rows(nh_list)}\n"
+    )
+    messages.append(msg4)
+
+    # ── 메시지 5: 섹터 상위/하위 ──────────────────────────
+    EXCL = {"0001","1001","0002","0003","0004","0028"}
+    sec_filtered = [s for s in sectors if s.get("iscd","") not in EXCL]
+    sec_sorted   = sorted(sec_filtered, key=lambda x: x["change"], reverse=True)
+    top3_sec  = sec_sorted[:3]
+    bot3_sec  = sec_sorted[-3:]
+
+    def sec_rows(lst):
+        rows = []
+        for s in lst:
+            mk = "Q" if s.get("mkt_type")=="KOSDAQ" else "K"
+            rows.append(
+                f"  • {s['name']}[{mk}]  <b>{pct(s['change'])}</b>"
+            )
+        return "\n".join(rows) if rows else "  없음"
+
+    msg5 = (
+        f"🏭 <b>[ 섹터 등락 ]</b>\n\n"
+        f"▲ 상위 섹터\n{sec_rows(top3_sec)}\n\n"
+        f"▽ 하위 섹터\n{sec_rows(bot3_sec)}\n\n"
+        f"🔗 <a href='https://bjkim-pixel.github.io/market-radar/'>마켓레이더 바로가기</a>"
+    )
+    messages.append(msg5)
+
+    return messages
 
 
 # ----------------------------------------
 # MAIN
 # ----------------------------------------
 def main():
+    kst_now  = datetime.utcnow() + timedelta(hours=9)
+    now_str  = kst_now.strftime("%Y-%m-%d %H:%M")
+    kst_date = kst_now.strftime("%Y-%m-%d")
+
     token = get_token()
 
     print("\n[1] index...")
@@ -614,7 +798,7 @@ def main():
     sectors = fetch_all_sectors(token)
     time.sleep(0.3)
 
-    print("\n[3] stocks (price + investor + ohlcv + phase)...")
+    print("\n[3] stocks...")
     stocks = fetch_all_stocks(token)
     time.sleep(0.3)
 
@@ -641,11 +825,10 @@ def main():
     }
 
     summary_lines = build_summary(indices, stocks, market_supply, phase_stats)
-    now_str       = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     payload = clean_nan({
         "updated_at":    now_str,
-        "date":          datetime.now().strftime("%Y-%m-%d"),
+        "date":          kst_date,
         "indices":       indices,
         "sectors":       sectors,
         "stocks":        stocks,
@@ -663,6 +846,19 @@ def main():
     print(f"  index:{len(indices)} sector:{len(sectors)} stock:{len(stocks)}")
     print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P3={phase_stats['p3']}")
 
+    # ── 텔레그램: 섹션별 5개 메시지 순차 전송 ──
+    tg_token   = os.environ.get("TELEGRAM_TOKEN", "")
+    tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if tg_token and tg_chat_id:
+        messages = build_telegram_messages(
+            indices, sectors, stocks, market_supply, phase_stats, now_str
+        )
+        for i, msg in enumerate(messages):
+            send_telegram(tg_token, tg_chat_id, msg)
+            time.sleep(0.5)   # 연속 전송 간격
+        print(f"[telegram] {len(messages)}개 메시지 전송 완료")
+
 
 if __name__ == "__main__":
     main()
+```
