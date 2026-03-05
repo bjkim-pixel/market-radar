@@ -858,24 +858,9 @@ def main():
     stocks = fetch_all_stocks(token)
     time.sleep(0.3)
 
-    # 섹터별 종목 매핑
-    sector_stock_map = build_sector_stock_map(sectors, stocks)
-
-    payload = clean_nan({
-        "updated_at":        now_str,
-        "date":              kst_date,
-        "indices":           indices,
-        "sectors":           sectors,
-        "stocks":            stocks,
-        "top_traders":       top_traders,
-        "market_supply":     market_supply,
-        "phase_stats":       phase_stats,
-        "summary_lines":     summary_lines,
-        "sector_stock_map":  sector_stock_map,   # ← 추가
-    })
-
     market_supply = calc_market_supply(stocks)
-    phase_stats   = {
+
+    phase_stats = {
         "golden":   sum(1 for s in stocks if s.get("phase_key") == "golden"),
         "p2":       sum(1 for s in stocks if s.get("phase_key") == "p2"),
         "p1":       sum(1 for s in stocks if s.get("phase_key") == "p1"),
@@ -896,18 +881,20 @@ def main():
         "inst_sell":    top_by(stocks, "inst_today",    20, False),
     }
 
-    summary_lines = build_summary(indices, stocks, market_supply, phase_stats)
+    summary_lines    = build_summary(indices, stocks, market_supply, phase_stats)
+    sector_stock_map = build_sector_stock_map(sectors, stocks)
 
     payload = clean_nan({
-        "updated_at":    now_str,
-        "date":          kst_date,
-        "indices":       indices,
-        "sectors":       sectors,
-        "stocks":        stocks,
-        "top_traders":   top_traders,
-        "market_supply": market_supply,
-        "phase_stats":   phase_stats,
-        "summary_lines": summary_lines,
+        "updated_at":       now_str,
+        "date":             kst_date,
+        "indices":          indices,
+        "sectors":          sectors,
+        "stocks":           stocks,
+        "top_traders":      top_traders,
+        "market_supply":    market_supply,
+        "phase_stats":      phase_stats,
+        "summary_lines":    summary_lines,
+        "sector_stock_map": sector_stock_map,
     })
 
     os.makedirs("data", exist_ok=True)
@@ -916,9 +903,9 @@ def main():
 
     print(f"\ndone: data/market.json")
     print(f"  index:{len(indices)} sector:{len(sectors)} stock:{len(stocks)}")
-    print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P2={phase_stats['p2']}P3={phase_stats['p3']}")
+    print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P3={phase_stats['p3']}")
 
-    # ── 텔레그램: 섹션별 5개 메시지 순차 전송 ──
+    # 텔레그램 알림
     tg_token   = os.environ.get("TELEGRAM_TOKEN", "")
     tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if tg_token and tg_chat_id:
@@ -927,7 +914,7 @@ def main():
         )
         for i, msg in enumerate(messages):
             send_telegram(tg_token, tg_chat_id, msg)
-            time.sleep(0.5)   # 연속 전송 간격
+            time.sleep(0.5)
         print(f"[telegram] {len(messages)}개 메시지 전송 완료")
 
 
