@@ -559,6 +559,62 @@ def fetch_all_stocks(token):
     print(f"  [stocks] total:{len(stocks)}")
     return stocks
 
+def build_sector_stock_map(sectors, stocks):
+    """
+    섹터명 ↔ 종목 업종명 매핑 테이블 생성
+    KIS API의 섹터명과 종목 업종명이 다를 수 있어서
+    직접 매핑 테이블을 정의
+    """
+    # KIS 섹터명 → 종목 bstp_kor_isnm 키워드 매핑
+    SECTOR_KEYWORD_MAP = {
+        # KOSPI
+        "에너지":       ["에너지","정유"],
+        "소재":         ["소재","화학","철강","비철금속","종이"],
+        "산업재":       ["산업재","기계","건설","운수","조선"],
+        "경기소비재":   ["경기소비재","자동차","소매","미디어","호텔"],
+        "필수소비재":   ["필수소비재","식품","음식료","생활용품"],
+        "건강관리":     ["건강관리","제약","바이오","의료"],
+        "금융":         ["금융","은행","증권","보험"],
+        "IT":           ["IT","반도체","하드웨어","소프트웨어","통신장비"],
+        "통신서비스":   ["통신서비스","통신"],
+        "유틸리티":     ["유틸리티","전기","가스"],
+        # KOSDAQ
+        "제약":         ["제약","바이오","의약"],
+        "반도체":       ["반도체","IT부품"],
+        "소프트웨어":   ["소프트웨어","IT서비스"],
+        "인터넷":       ["인터넷","디지털컨텐츠"],
+        "제조":         ["제조","기계","장비"],
+        "오락문화":     ["오락","엔터테인먼트","문화"],
+        "의료정밀기기": ["의료기기","정밀기기","의료"],
+    }
+
+    sector_map = {}
+    for sec in sectors:
+        name    = sec.get("name", "")
+        iscd    = sec.get("iscd", "")
+        # 매핑 테이블에서 키워드 찾기
+        keywords = None
+        for key, kws in SECTOR_KEYWORD_MAP.items():
+            if key in name or name in key:
+                keywords = kws
+                break
+
+        if not keywords:
+            # 매핑 없으면 섹터명 자체로 정확 매칭
+            keywords = [name.replace(" ", "")]
+
+        matched_codes = []
+        for s in stocks:
+            stock_sector = (s.get("sector") or "").replace(" ", "")
+            for kw in keywords:
+                if kw in stock_sector:
+                    matched_codes.append(s["code"])
+                    break
+
+        sector_map[iscd] = matched_codes
+
+    return sector_map
+
 
 # ----------------------------------------
 # 9. 집계
@@ -802,6 +858,22 @@ def main():
     stocks = fetch_all_stocks(token)
     time.sleep(0.3)
 
+    # 섹터별 종목 매핑
+    sector_stock_map = build_sector_stock_map(sectors, stocks)
+
+    payload = clean_nan({
+        "updated_at":        now_str,
+        "date":              kst_date,
+        "indices":           indices,
+        "sectors":           sectors,
+        "stocks":            stocks,
+        "top_traders":       top_traders,
+        "market_supply":     market_supply,
+        "phase_stats":       phase_stats,
+        "summary_lines":     summary_lines,
+        "sector_stock_map":  sector_stock_map,   # ← 추가
+    })
+
     market_supply = calc_market_supply(stocks)
     phase_stats   = {
         "golden":   sum(1 for s in stocks if s.get("phase_key") == "golden"),
@@ -844,7 +916,7 @@ def main():
 
     print(f"\ndone: data/market.json")
     print(f"  index:{len(indices)} sector:{len(sectors)} stock:{len(stocks)}")
-    print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P3={phase_stats['p3']}")
+    print(f"  GOLDEN={phase_stats['golden']} P1={phase_stats['p1']} P2={phase_stats['p2']}P3={phase_stats['p3']}")
 
     # ── 텔레그램: 섹션별 5개 메시지 순차 전송 ──
     tg_token   = os.environ.get("TELEGRAM_TOKEN", "")
