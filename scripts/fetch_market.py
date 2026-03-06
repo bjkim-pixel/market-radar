@@ -917,6 +917,26 @@ def main():
             time.sleep(0.5)
         print(f"[telegram] {len(messages)}개 메시지 전송 완료")
 
+# 텔레그램 알림
+    tg_token   = os.environ.get("TELEGRAM_TOKEN", "")
+    tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+    # 전송 대상: 개인 + 그룹
+    chat_ids = []
+    if tg_chat_id:
+        chat_ids.append(tg_chat_id)          # 개인: 7156534633
+    chat_ids.append("-5233725507")            # 그룹: Bj, ㅎㅅ 및 Joe
+
+    if tg_token and chat_ids:
+        messages = build_telegram_messages(
+            indices, sectors, stocks, market_supply, phase_stats, now_str
+        )
+        for chat_id in chat_ids:
+            for msg in messages:
+                send_telegram(tg_token, chat_id, msg)
+                time.sleep(0.3)
+        print(f"[telegram] {len(chat_ids)}명/그룹에게 {len(messages)}개 메시지 전송 완료")
+
 
 if __name__ == "__main__":
     main()
