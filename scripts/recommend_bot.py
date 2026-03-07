@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-멀티 에이전트 주식 추천 시스템 v2
-수정사항:
-- IndexError 버그 수정 (빈 reasons 리스트 안전 처리)
-- 수집 실패 종목명 표시
-- 골든수급 기준 강화 (OR → AND)
-- 수급 상위/골든/이탈 종목 10개씩 표시
-- 시총 가중치 추가 (대형주 신뢰도)
-- DART 호출 상위 10개로 축소 (타임아웃 방지)
-- 컨센서스 API 개선 (복수 URL 시도)
-- 각 단계별 데이터 출처 및 배점 기준 명시
-- 이견 감지 버그 수정
+멀티 에이전트 주식 추천 시스템 v3
+변경사항:
+- 합병/상장폐지 7개 종목 제거
+- 수급 분석: 시총 1조 미만 필터링 + 5조↑ 참고 TOP10 추가
+- 펀더멘털: 25년 연간 + 26년 분기 실적 표시
+- 컨센서스 에이전트 제거 (수집 실패로 삭제)
+- 추천 스코어: 수급 + 펀더 2개 기준으로 변경
+- 마지막 메시지에 인사말 추가
 """
 
 import os, time, requests, re
@@ -33,11 +30,12 @@ AGENTS = {
     "collector":    {"name": "📡 수집 에이전트",  "desc": "KIS API 데이터 수집 담당"},
     "supply":       {"name": "🔬 수급 분석 에이전트", "desc": "외인/기관 수급 흐름 전문"},
     "fundamental":  {"name": "📊 펀더멘털 에이전트", "desc": "실적/밸류에이션 전문 (DART)"},
-    "consensus":    {"name": "🏦 컨센서스 에이전트", "desc": "증권사 목표주가 전문 (Naver)"},
     "recommender":  {"name": "⭐ 추천 에이전트",   "desc": "종합 스코어링 및 최종 추천"},
 }
 
-# ── 시총 1조 이상 종목 ────────────────────────────────
+# ── 종목 목록 (합병/상장폐지 7개 제거) ───────────────
+# 제거: 현대미포조선(010620), 메리츠화재(000060), HD현대인프라코어(042670),
+#       쌍용C&E(003410), 메리츠증권(008560), 셀트리온헬스케어(091990), 비올(335890)
 MAJOR_STOCKS = [
     ("005930","삼성전자","KOSPI"),
     ("000660","SK하이닉스","KOSPI"),
@@ -105,13 +103,11 @@ MAJOR_STOCKS = [
     ("021240","코웨이","KOSPI"),
     ("030000","제일기획","KOSPI"),
     ("002380","KCC","KOSPI"),
-    ("010620","현대미포조선","KOSPI"),
     ("267250","HD현대","KOSPI"),
     ("004800","효성","KOSPI"),
     ("035250","강원랜드","KOSPI"),
     ("180640","한진칼","KOSPI"),
     ("071050","한국금융지주","KOSPI"),
-    ("000060","메리츠화재","KOSPI"),
     ("001450","현대해상","KOSPI"),
     ("005945","NH투자증권","KOSPI"),
     ("039490","키움증권","KOSPI"),
@@ -129,13 +125,10 @@ MAJOR_STOCKS = [
     ("051600","한전KPS","KOSPI"),
     ("090430","아모레G","KOSPI"),
     ("161390","한국타이어앤테크놀로지","KOSPI"),
-    ("042670","HD현대인프라코어","KOSPI"),
     ("011790","SKC","KOSPI"),
-    ("003410","쌍용C&E","KOSPI"),
     ("001680","대상","KOSPI"),
     ("007070","GS리테일","KOSPI"),
     ("010060","OCI","KOSPI"),
-    ("008560","메리츠증권","KOSPI"),
     ("382800","한화시스템","KOSPI"),
     ("000210","DL","KOSPI"),
     ("008770","호텔신라","KOSPI"),
@@ -165,7 +158,6 @@ MAJOR_STOCKS = [
     ("352820","하이브","KOSDAQ"),
     ("122870","와이지엔터테인먼트","KOSDAQ"),
     ("095340","ISC","KOSDAQ"),
-    ("091990","셀트리온헬스케어","KOSDAQ"),
     ("039030","이오테크닉스","KOSDAQ"),
     ("240810","원익IPS","KOSDAQ"),
     ("131970","두산테스나","KOSDAQ"),
@@ -173,7 +165,6 @@ MAJOR_STOCKS = [
     ("039200","오스코텍","KOSDAQ"),
     ("067630","HLB생명과학","KOSDAQ"),
     ("048410","현대바이오","KOSDAQ"),
-    ("335890","비올","KOSDAQ"),
     ("237690","에스티팜","KOSDAQ"),
     ("108490","로보티즈","KOSDAQ"),
     ("053800","안랩","KOSDAQ"),
@@ -184,13 +175,15 @@ MAJOR_STOCKS = [
     ("336570","원텍","KOSDAQ"),
 ]
 
+MKTCAP_1T  = 10000   # 1조 (억원 단위)
+MKTCAP_5T  = 50000   # 5조
+
 
 # ═══════════════════════════════════════
 # 유틸
 # ═══════════════════════════════════════
 
 def first_reason(reasons, default="데이터 없음"):
-    """빈 리스트도 안전하게 처리 — IndexError 완전 방지"""
     return reasons[0] if reasons else default
 
 def fmt_won(v):
@@ -279,7 +272,6 @@ def fetch_stock_data(code, token):
     result.update({
         "price":    price,
         "change":   sf(o.get("prdy_ctrt", 0)),
-        "diff":     si(o.get("prdy_vrss", 0)),
         "high52":   high52,
         "low52":    si(o.get("d250_lwpr", 0)),
         "per":      sf(o.get("per", 0)),
@@ -321,7 +313,7 @@ def fetch_stock_data(code, token):
 
 
 # ═══════════════════════════════════════
-# DART
+# DART (25년 연간 + 26년 분기)
 # ═══════════════════════════════════════
 
 def get_corp_code(stock_code):
@@ -334,9 +326,38 @@ def get_corp_code(stock_code):
     except: pass
     return ""
 
-def fetch_dart(corp_code):
-    results  = {}
-    kst_year = (datetime.utcnow() + timedelta(hours=9)).year
+def parse_financial_items(item_list):
+    """재무제표 항목 리스트에서 매출/영업이익/순이익 추출"""
+    result = {}
+    for item in item_list:
+        acnt = item.get("account_nm", "")
+        val  = item.get("thstrm_amount", "").replace(",", "")
+        if "매출액" in acnt and "영업" not in acnt and not result.get("rev"):
+            try: result["rev"] = int(val)
+            except: pass
+        if "영업이익" in acnt and "손실" not in acnt and not result.get("op"):
+            try: result["op"] = int(val)
+            except: pass
+        if "당기순이익" in acnt and not result.get("net"):
+            try: result["net"] = int(val)
+            except: pass
+    if result.get("rev") and result.get("op"):
+        result["op_margin"] = round(result["op"] / result["rev"] * 100, 1)
+    return result
+
+def fetch_dart_full(corp_code):
+    """
+    25년 연간 실적 + 26년 발표된 최근 분기 실적
+    반환: {
+        "annual_2025": {rev, op, net, op_margin},
+        "annual_2024": {rev, op, net, op_margin},
+        "quarter_2026": {"label": "26년 Q1", rev, op, op_margin}  # 있으면
+    }
+    """
+    data     = {}
+    kst_year = (datetime.utcnow() + timedelta(hours=9)).year  # 2026
+
+    # 연간: 25년, 24년
     for year in [kst_year - 1, kst_year - 2]:
         try:
             r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
@@ -345,84 +366,31 @@ def fetch_dart(corp_code):
             }, timeout=15)
             d = r.json()
             if d.get("status") == "000":
-                annual = {}
-                for item in d.get("list", []):
-                    acnt = item.get("account_nm", "")
-                    val  = item.get("thstrm_amount", "").replace(",", "")
-                    if "매출액" in acnt and "영업" not in acnt and not annual.get("rev"):
-                        try: annual["rev"] = int(val)
-                        except: pass
-                    if "영업이익" in acnt and "손실" not in acnt and not annual.get("op"):
-                        try: annual["op"] = int(val)
-                        except: pass
-                    if "당기순이익" in acnt and not annual.get("net"):
-                        try: annual["net"] = int(val)
-                        except: pass
-                if annual:
-                    if annual.get("rev") and annual.get("op"):
-                        annual["op_margin"] = round(annual["op"] / annual["rev"] * 100, 1)
-                    results[year] = annual
+                parsed = parse_financial_items(d.get("list", []))
+                if parsed:
+                    data[f"annual_{year}"] = parsed
         except: pass
         time.sleep(0.2)
-    return results
 
+    # 26년 분기: Q1(11013) → Q2(11012) → Q3(11014) 순서로 있는 것 가져오기
+    quarter_map = {"11013": "Q1", "11012": "Q2", "11014": "Q3"}
+    for reprt_code, label in quarter_map.items():
+        try:
+            r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
+                "crtfc_key": DART_API_KEY, "corp_code": corp_code,
+                "bsns_year": str(kst_year), "reprt_code": reprt_code, "fs_div": "CFS",
+            }, timeout=15)
+            d = r.json()
+            if d.get("status") == "000":
+                parsed = parse_financial_items(d.get("list", []))
+                if parsed:
+                    parsed["label"] = f"{str(kst_year)[2:]}년 {label}"
+                    data["quarter_latest"] = parsed
+                    break  # 가장 최근 분기 하나만
+        except: pass
+        time.sleep(0.2)
 
-# ═══════════════════════════════════════
-# 컨센서스
-# ═══════════════════════════════════════
-
-def fetch_consensus(code):
-    # 1차: 모바일 API
-    try:
-        r = requests.get(
-            f"https://m.stock.naver.com/api/stock/{code}/investmentOpinion",
-            timeout=10,
-            headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"},
-        )
-        if r.status_code == 200:
-            raw   = r.json()
-            items = raw if isinstance(raw, list) else raw.get("list", raw.get("items", []))
-            if items:
-                prices   = [float(i.get("targetPrice") or 0) for i in items if i.get("targetPrice")]
-                opinions = [str(i.get("opinion") or "") for i in items]
-                buy_cnt  = sum(1 for o in opinions
-                               if any(k in o for k in ["매수","BUY","Buy","Outperform","Strong"]))
-                avg_tp   = int(sum(prices) / len(prices)) if prices else 0
-                recent   = []
-                for i in items[:3]:
-                    firm = i.get("firm", i.get("stockFirmName", ""))
-                    tp   = int(i.get("targetPrice") or 0)
-                    op   = i.get("opinion", i.get("investOpinion", ""))
-                    dt   = str(i.get("date", i.get("baseDate", "")))[:10]
-                    if firm and tp:
-                        recent.append(f"{firm} {op} {tp:,}원 ({dt})")
-                if avg_tp > 0:
-                    return {
-                        "avg_tp": avg_tp, "buy_cnt": buy_cnt,
-                        "total":  len(items),
-                        "buy_ratio": round(buy_cnt / len(items) * 100) if items else 0,
-                        "recent": recent,
-                    }
-    except Exception as e:
-        print(f"  [consensus 1차] {code}: {e}")
-
-    # 2차: PC 웹 파싱
-    try:
-        r = requests.get(
-            f"https://finance.naver.com/item/coinfo.naver?code={code}&target=cn",
-            timeout=10,
-            headers={"User-Agent": "Mozilla/5.0", "Referer": "https://finance.naver.com"},
-        )
-        if r.status_code == 200:
-            tps = [int(t.replace(",","")) for t in re.findall(r'목표주가[^0-9]*([0-9,]+)', r.text)
-                   if int(t.replace(",","")) > 1000]
-            if tps:
-                return {"avg_tp": int(sum(tps)/len(tps)), "buy_cnt": 0,
-                        "total": len(tps), "buy_ratio": 0, "recent": []}
-    except Exception as e:
-        print(f"  [consensus 2차] {code}: {e}")
-
-    return {}
+    return data
 
 
 # ═══════════════════════════════════════
@@ -430,6 +398,15 @@ def fetch_consensus(code):
 # ═══════════════════════════════════════
 
 def calc_supply_score(s):
+    """
+    수급 점수 (0~42점)
+    외인 연속 순매수  최대 15점  (7일↑★★★ / 5일12 / 3일8 / 2일4)
+    기관 연속 순매수  최대 10점  (5일↑★★ / 3일7 / 2일3)
+    매직지수          최대 10점  (≥0.05%★★★ / ≥0.02%7 / ≥0.01%4)
+    5일 외인+기관 동반매수   5점
+    신고가 근접/돌파          5점
+    시총 보너스 (대형주)     최대 2점
+    """
     score, reasons = 0, []
     f_consec = s.get("f_consec", 0)
     i_consec = s.get("i_consec", 0)
@@ -462,7 +439,6 @@ def calc_supply_score(s):
     if mktcap >= 100000:  score += 2; reasons.append(f"대형주({fmt_won(mktcap*1e8)})")
     elif mktcap >= 50000: score += 1; reasons.append(f"중대형주({fmt_won(mktcap*1e8)})")
 
-    # ★ 빈 reasons 안전장치
     if not reasons:
         reasons.append(f"외인{f_consec}일 기관{i_consec}일 매직{magic:+.4f}%")
 
@@ -470,6 +446,13 @@ def calc_supply_score(s):
 
 
 def calc_fundamental_score(s, dart):
+    """
+    펀더멘털 점수 (0~30점)
+    PER  ≤8배 10점 / ≤15배 7점 / ≤25배 4점 / >40배 -3점
+    PBR  ≤0.7배 7점 / ≤1.5배 4점
+    영업익 성장률  흑전/+100%↑ 10점 / +30%↑ 7점 / +10%↑ 4점
+    출처: KIS(PER/PBR) + DART(영업이익)
+    """
     score, reasons = 0, []
     per = s.get("per", 0)
     pbr = s.get("pbr", 0)
@@ -482,10 +465,12 @@ def calc_fundamental_score(s, dart):
     if 0 < pbr <= 0.7:    score += 7;  reasons.append(f"PBR {pbr:.2f}배 자산저평가 ★★")
     elif 0.7 < pbr <= 1.5:score += 4;  reasons.append(f"PBR {pbr:.2f}배 적정")
 
-    if dart and len(dart) >= 2:
-        years = sorted(dart.keys(), reverse=True)
-        curr  = dart[years[0]].get("op", 0)
-        prev  = dart[years[1]].get("op", 0)
+    # 25년 vs 24년 영업이익 성장률
+    a25 = dart.get("annual_2025", {})
+    a24 = dart.get("annual_2024", {})
+    if a25 and a24:
+        curr = a25.get("op", 0)
+        prev = a24.get("op", 0)
         if prev and curr:
             g = (curr - prev) / abs(prev) * 100
             if prev < 0 and curr > 0: score += 10; reasons.append("영업익 흑자전환 ★★★")
@@ -494,43 +479,46 @@ def calc_fundamental_score(s, dart):
             elif g >= 10:             score += 4;  reasons.append(f"영업익 +{g:.0f}% ★")
             elif g <= -50:            score -= 5;  reasons.append(f"영업익 {g:.0f}% ⚠️")
 
-    # ★ 빈 reasons 안전장치
     if not reasons:
-        reasons.append(f"PER {per:.1f}배 PBR {pbr:.2f}배 (DART 미수집)")
+        reasons.append(f"PER {per:.1f}배 PBR {pbr:.2f}배")
 
     return min(max(score, 0), 30), reasons
 
 
-def calc_consensus_score(s, cons):
-    score, reasons = 0, []
-    avg_tp    = cons.get("avg_tp", 0)
-    buy_ratio = cons.get("buy_ratio", 0)
-    total     = cons.get("total", 0)
-    price     = s.get("price", 0)
+def fmt_dart_summary(dart):
+    """
+    DART 실적 요약 문자열 생성
+    25년 연간 + 26년 최근 분기
+    """
+    lines = []
+    a25 = dart.get("annual_2025", {})
+    a24 = dart.get("annual_2024", {})
+    q   = dart.get("quarter_latest", {})
 
-    if not avg_tp or not price:
-        return 10, ["컨센서스 미수집 (기본 10점)"]
+    if a25:
+        rev = fmt_won(a25.get("rev", 0))
+        op  = fmt_won(a25.get("op",  0))
+        opm = a25.get("op_margin", 0)
+        g_str = ""
+        if a24 and a24.get("op") and a25.get("op"):
+            g = (a25["op"] - a24["op"]) / abs(a24["op"]) * 100
+            g_str = f"  전년比 {g:+.0f}%"
+        lines.append(f"  📋 <b>25년 연간</b>  매출 {rev}  영업익 {op} ({opm}%){g_str}")
 
-    upside = (avg_tp - price) / price * 100
+    if a24:
+        rev = fmt_won(a24.get("rev", 0))
+        op  = fmt_won(a24.get("op",  0))
+        opm = a24.get("op_margin", 0)
+        lines.append(f"  📋 <b>24년 연간</b>  매출 {rev}  영업익 {op} ({opm}%)")
 
-    if upside >= 40:   score += 15; reasons.append(f"상승여력 {upside:.0f}% ★★★")
-    elif upside >= 25: score += 12; reasons.append(f"상승여력 {upside:.0f}% ★★")
-    elif upside >= 15: score += 8;  reasons.append(f"상승여력 {upside:.0f}% ★")
-    elif upside >= 5:  score += 4;  reasons.append(f"상승여력 {upside:.0f}%")
-    elif upside < -10: score -= 5;  reasons.append(f"목표주가 하회 {upside:.0f}% ⚠️")
+    if q:
+        label = q.get("label", "26년 분기")
+        rev   = fmt_won(q.get("rev", 0))
+        op    = fmt_won(q.get("op",  0))
+        opm   = q.get("op_margin", 0)
+        lines.append(f"  📋 <b>{label}</b>  매출 {rev}  영업익 {op} ({opm}%)")
 
-    if buy_ratio >= 90:   score += 15; reasons.append(f"매수의견 {buy_ratio:.0f}% ★★★")
-    elif buy_ratio >= 75: score += 10; reasons.append(f"매수의견 {buy_ratio:.0f}% ★★")
-    elif buy_ratio >= 60: score += 6;  reasons.append(f"매수의견 {buy_ratio:.0f}% ★")
-    elif buy_ratio < 40:  score -= 3;  reasons.append(f"매수의견 {buy_ratio:.0f}% ⚠️")
-
-    if total >= 10: score += 3; reasons.append(f"리포트 {total}개 (신뢰도↑)")
-
-    # ★ 빈 reasons 안전장치
-    if not reasons:
-        reasons.append(f"목표 {avg_tp:,}원 상승여력 {upside:.0f}%")
-
-    return min(max(score, 0), 30), reasons
+    return "\n".join(lines) if lines else "  DART 실적 미수집"
 
 
 # ═══════════════════════════════════════
@@ -546,13 +534,12 @@ def run_agent_discussion():
     agent_say("orchestrator",
         f"📅 <b>{now_str} KST  |  장 마감</b>\n\n"
         f"오늘 분석 시작합니다.\n"
-        f"대상: 시총 1조↑ <b>{total}개</b> (KOSPI+KOSDAQ)\n\n"
+        f"대상: <b>{total}개</b> (KOSPI+KOSDAQ, 시총 1조↑)\n\n"
         f"┌ 1️⃣ 수집  → KIS API 현재가+수급 (전 종목)\n"
-        f"├ 2️⃣ 수급  → 연속매수·매직지수·시총가중 (전 종목)\n"
-        f"├ 3️⃣ 펀더  → DART 실적+PER/PBR (상위 10개)\n"
-        f"├ 4️⃣ 컨센  → Naver 증권사 목표주가 (상위 20개)\n"
-        f"└ 5️⃣ 추천  → 종합 스코어링 TOP5\n\n"
-        f"<b>배점:</b> 수급 42 + 펀더 30 + 컨센 30 = 102점 만점\n\n"
+        f"├ 2️⃣ 수급  → 연속매수·매직지수 (시총 1조↑ 필터)\n"
+        f"├ 3️⃣ 펀더  → DART 25년 연간 + 26년 분기 (상위 15개)\n"
+        f"└ 4️⃣ 추천  → 수급+펀더 종합 스코어링 TOP5\n\n"
+        f"<b>배점:</b> 수급 42 + 펀더 30 = 72점 만점\n\n"
         f"📡 수집 에이전트, 시작!",
         delay=2
     )
@@ -596,9 +583,8 @@ def run_agent_discussion():
 
     fail_msg = ""
     if failed:
-        fail_msg = (f"\n\n⚠️ <b>수집 실패 {len(failed)}개</b> (거래정지/데이터없음)\n"
-                    + ", ".join(failed[:10])
-                    + (f" 외 {len(failed)-10}개" if len(failed) > 10 else ""))
+        fail_msg = (f"\n\n⚠️ <b>수집 실패 {len(failed)}개</b>\n"
+                    + ", ".join(failed[:10]))
 
     agent_typing(1.5)
     agent_say("collector",
@@ -617,6 +603,7 @@ def run_agent_discussion():
     agent_typing(2)
     agent_say("supply",
         f"<b>{success}개 종목</b> 수신 ✅\n\n"
+        f"<b>필터:</b> 시총 1조 미만 제외\n\n"
         f"<b>배점 기준 (42점 만점):</b>\n"
         f"  외인 연속 순매수  최대 15점\n"
         f"  기관 연속 순매수  최대 10점\n"
@@ -624,8 +611,8 @@ def run_agent_discussion():
         f"  5일 외인+기관 동반매수  5점\n"
         f"  신고가 근접/돌파        5점\n"
         f"  시총 보너스 (대형주)   최대 2점\n\n"
-        f"<b>골든수급:</b> 외인 5일↑ AND 기관 5일↑ (동시 매집)\n"
-        f"<b>이탈경고:</b> 외인 0일 AND 기관 0일 (동시 매도)\n\n"
+        f"<b>골든수급:</b> 외인 5일↑ AND 기관 5일↑\n"
+        f"<b>이탈경고:</b> 외인 0일 AND 기관 0일 AND 매직 음수\n\n"
         f"⏳ 분석 중...",
         delay=2
     )
@@ -635,14 +622,25 @@ def run_agent_discussion():
         s["supply_score"]   = sc
         s["supply_reasons"] = rs
 
-    supply_top = sorted(all_stocks, key=lambda x: x["supply_score"], reverse=True)[:20]
-    # 골든수급: 외인 5일↑ AND 기관 5일↑ (큰손 동시 매집)
-    golden = [s for s in all_stocks
+    # 시총 1조 이상만 필터링
+    filtered = [s for s in all_stocks if s.get("mktcap", 0) >= MKTCAP_1T]
+    filtered_out = success - len(filtered)
+
+    supply_top = sorted(filtered, key=lambda x: x["supply_score"], reverse=True)[:20]
+
+    # 골든수급: 외인 5일↑ AND 기관 5일↑
+    golden = [s for s in filtered
               if s.get("f_consec", 0) >= 5 and s.get("i_consec", 0) >= 5]
-    # 이탈경고: 외인+기관 모두 0일 AND 매직 음수 (큰손 동시 이탈)
-    warn   = [s for s in all_stocks
+    # 이탈경고: 외인+기관 모두 0일 AND 매직 음수
+    warn   = [s for s in filtered
               if s.get("f_consec", 0) == 0 and s.get("i_consec", 0) == 0
               and s.get("magic", 0) < 0]
+
+    # 시총 5조↑ 참고 TOP10
+    large_top = sorted(
+        [s for s in filtered if s.get("mktcap", 0) >= MKTCAP_5T],
+        key=lambda x: x["supply_score"], reverse=True
+    )[:10]
 
     top_lines = "\n".join(
         f"  {i+1}. <b>{s['name']}</b>[{'Q' if s['mkt']=='KOSDAQ' else 'K'}]"
@@ -652,16 +650,28 @@ def run_agent_discussion():
         f"  <b>{s['supply_score']}점</b>"
         for i, s in enumerate(supply_top[:10])
     )
+
+    large_lines = "\n".join(
+        f"  {i+1}. <b>{s['name']}</b>"
+        f"  시총{fmt_won(s.get('mktcap',0)*1e8)}"
+        f"  외인{s.get('f_consec',0)}일 기관{s.get('i_consec',0)}일"
+        f"  매직{s.get('magic',0):+.4f}%"
+        f"  {s['supply_score']}점"
+        for i, s in enumerate(large_top)
+    )
+
     golden_list = ", ".join(s["name"] for s in golden[:10]) + (f" 외 {len(golden)-10}개" if len(golden) > 10 else "")
     warn_list   = ", ".join(s["name"] for s in warn[:10])   + (f" 외 {len(warn)-10}개"   if len(warn)   > 10 else "")
 
     agent_typing(2)
     agent_say("supply",
         f"✅ <b>수급 분석 완료!</b>\n\n"
-        f"📊 <b>수급 상위 10종목:</b>\n{top_lines}\n\n"
-        f"⭐ <b>골든수급</b> {len(golden)}개\n"
+        f"<i>시총 1조 미만 {filtered_out}개 제외 → {len(filtered)}개 분석</i>\n\n"
+        f"📊 <b>수급 상위 10종목 (전체):</b>\n{top_lines}\n\n"
+        f"🏢 <b>시총 5조↑ 수급 TOP10 (참고):</b>\n{large_lines}\n\n"
+        f"⭐ <b>골든수급</b> {len(golden)}개  (외인+기관 동시 5일↑)\n"
         f"  {golden_list if golden_list else '해당 없음'}\n\n"
-        f"⚠️ <b>수급 이탈 경고</b> {len(warn)}개\n"
+        f"⚠️ <b>수급 이탈 경고</b> {len(warn)}개  (외인+기관 동시 0일+매직음수)\n"
         f"  {warn_list if warn_list else '해당 없음'}\n\n"
         f"📊 펀더멘털 에이전트, 상위 20개 넘깁니다!",
         delay=2
@@ -673,23 +683,28 @@ def run_agent_discussion():
         f"상위 20개 종목 수신 ✅\n\n"
         f"<b>데이터 출처:</b>\n"
         f"  PER/PBR → KIS API (실시간)\n"
-        f"  매출·영업이익 → DART 전자공시 (연결재무제표)\n\n"
+        f"  실적 → DART 금융감독원 전자공시 (연결재무제표)\n\n"
+        f"<b>수집 범위:</b>\n"
+        f"  25년 연간 매출·영업이익·영업이익률\n"
+        f"  24년 연간 (전년 비교용)\n"
+        f"  26년 최근 발표 분기 (있으면)\n\n"
         f"<b>배점 기준 (30점 만점):</b>\n"
         f"  PER ≤8배 10점 / ≤15배 7점 / ≤25배 4점\n"
         f"  PBR ≤0.7배 7점 / ≤1.5배 4점\n"
         f"  영업익 성장 흑전/+100%↑ 10점 / +30%↑ 7점\n\n"
-        f"⏳ DART 수집 중 (상위 10개)...",
+        f"⏳ DART 수집 중 (상위 15개)...",
         delay=1.5
     )
 
-    for s in supply_top[:10]:
+    # DART 상위 15개 수집
+    for s in supply_top[:15]:
         corp = get_corp_code(s["code"])
-        s["dart"] = fetch_dart(corp) if corp else {}
+        s["dart"] = fetch_dart_full(corp) if corp else {}
         sc, rs = calc_fundamental_score(s, s["dart"])
         s["fundamental_score"]   = sc
         s["fundamental_reasons"] = rs
 
-    for s in supply_top[10:]:
+    for s in supply_top[15:]:
         s["dart"] = {}
         sc, rs = calc_fundamental_score(s, {})
         s["fundamental_score"]   = sc
@@ -699,92 +714,30 @@ def run_agent_discussion():
 
     fund_lines = ""
     for i, s in enumerate(fund_top[:8]):
-        mk   = "Q" if s["mkt"] == "KOSDAQ" else "K"
-        dart = s.get("dart", {})
-        dart_str = ""
-        if dart:
-            y   = sorted(dart.keys(), reverse=True)[0]
-            rev = fmt_won(dart[y].get("rev", 0))
-            op  = fmt_won(dart[y].get("op", 0))
-            opm = dart[y].get("op_margin", 0)
-            dart_str = f"\n       {y}년 매출{rev} 영업익{op}({opm}%)"
+        mk = "Q" if s["mkt"] == "KOSDAQ" else "K"
+        dart_summary = fmt_dart_summary(s.get("dart", {}))
         fund_lines += (
-            f"  {i+1}. <b>{s['name']}</b>[{mk}]  "
+            f"\n  {i+1}. <b>{s['name']}</b>[{mk}]  "
             f"PER {s.get('per',0):.1f}배  PBR {s.get('pbr',0):.2f}배  "
-            f"<b>{s['fundamental_score']}점</b>{dart_str}\n"
+            f"<b>{s['fundamental_score']}점</b>\n"
+            f"{dart_summary}\n"
         )
 
     agent_typing(2)
     agent_say("fundamental",
         f"✅ <b>펀더멘털 분석 완료!</b>\n\n"
         f"📊 <b>펀더멘털 상위 8종목:</b>\n{fund_lines}\n"
-        f"※ DART는 수급 상위 10개만 수집\n\n"
-        f"🏦 컨센서스 에이전트, 넘깁니다!",
-        delay=2
-    )
-
-    # ━━━ 컨센서스 에이전트 ━━━
-    agent_typing(2)
-    agent_say("consensus",
-        f"20개 종목 수신 ✅\n\n"
-        f"<b>데이터 출처:</b> Naver Finance 증권사 컨센서스\n"
-        f"<b>수집 방법:</b> Mobile API → PC Web 순서 시도\n\n"
-        f"<b>배점 기준 (30점 만점):</b>\n"
-        f"  상승여력 ≥40% 15점 / ≥25% 12점 / ≥15% 8점\n"
-        f"  매수의견 ≥90% 15점 / ≥75% 10점 / ≥60% 6점\n\n"
-        f"⏳ 수집 중...",
-        delay=1.5
-    )
-
-    success_cons = 0
-    for s in supply_top:
-        cons = fetch_consensus(s["code"])
-        s["consensus"] = cons
-        if cons.get("avg_tp", 0) > 0: success_cons += 1
-        sc, rs = calc_consensus_score(s, cons)
-        s["consensus_score"]   = sc
-        s["consensus_reasons"] = rs
-        time.sleep(0.4)
-
-    cons_top = sorted(supply_top, key=lambda x: x["consensus_score"], reverse=True)
-
-    cons_lines = ""
-    for i, s in enumerate(cons_top[:8]):
-        mk     = "Q" if s["mkt"] == "KOSDAQ" else "K"
-        avg_tp = s.get("consensus", {}).get("avg_tp", 0)
-        price  = s.get("price", 1)
-        upside = round((avg_tp - price) / price * 100, 1) if avg_tp else 0
-        cons_lines += (
-            f"  {i+1}. <b>{s['name']}</b>[{mk}]  "
-            f"목표 {avg_tp:,}원  상승여력 {upside:+.1f}%  "
-            f"<b>{s['consensus_score']}점</b>\n"
-        )
-
-    disagree = [
-        f"• {s['name']}: 수급{s.get('supply_score',0)}점 vs 펀더{s.get('fundamental_score',0)}/컨센{s.get('consensus_score',0)}점"
-        for s in supply_top
-        if s.get("supply_score", 0) >= 25
-        and (s.get("fundamental_score", 0) <= 8 or s.get("consensus_score", 0) <= 8)
-    ]
-
-    agent_typing(2)
-    agent_say("consensus",
-        f"<b>컨센서스 수집:</b> {success_cons}/20개 성공\n"
-        + ("⚠️ 수집 실패 종목은 기본 10점 부여\n" if success_cons < 20 else "")
-        + f"\n📊 <b>컨센서스 상위 8종목:</b>\n{cons_lines}\n"
-        + (f"\n⚡ <b>에이전트 이견</b> {len(disagree)}개\n" + "\n".join(disagree[:3]) + "\n→ 수급 좋으나 펀더/컨센 약함\n" if disagree else "")
-        + f"\n⭐ 추천 에이전트, 최종 판단 부탁드립니다!",
+        f"⭐ 추천 에이전트, 최종 판단 부탁드립니다!",
         delay=2
     )
 
     # ━━━ 추천 에이전트 ━━━
     agent_typing(2)
     agent_say("recommender",
-        f"모든 에이전트 데이터 수신 ✅\n\n"
-        f"<b>종합 스코어링 (102점 만점):</b>\n"
-        f"  수급      42점\n"
-        f"  펀더멘털  30점\n"
-        f"  컨센서스  30점\n\n"
+        f"수급·펀더멘털 에이전트 데이터 수신 ✅\n\n"
+        f"<b>종합 스코어링 (72점 만점):</b>\n"
+        f"  수급      42점  (외인·기관 연속·매직·시총)\n"
+        f"  펀더멘털  30점  (PER·PBR·영업익 성장)\n\n"
         f"⏳ 스코어링 중...",
         delay=2
     )
@@ -792,8 +745,7 @@ def run_agent_discussion():
     for s in supply_top:
         s["total_score"] = (
             s.get("supply_score",      0) +
-            s.get("fundamental_score", 0) +
-            s.get("consensus_score",   0)
+            s.get("fundamental_score", 0)
         )
 
     final = sorted(supply_top, key=lambda x: x["total_score"], reverse=True)
@@ -804,23 +756,18 @@ def run_agent_discussion():
         mk     = "KOSDAQ" if s["mkt"] == "KOSDAQ" else "KOSPI"
         price  = s.get("price", 0)
         change = s.get("change", 0)
-        avg_tp = s.get("consensus", {}).get("avg_tp", 0)
-        upside = round((avg_tp - price) / price * 100, 1) if avg_tp and price else 0
-
-        # ★ first_reason으로 IndexError 완전 방지
-        sup_r = first_reason(s.get("supply_reasons",      []), "수급 데이터 없음")
-        fun_r = first_reason(s.get("fundamental_reasons", []), "펀더 데이터 없음")
-        con_r = first_reason(s.get("consensus_reasons",   []), "컨센 데이터 없음")
+        sup_r  = first_reason(s.get("supply_reasons",      []), "수급 데이터 없음")
+        fun_r  = first_reason(s.get("fundamental_reasons", []), "펀더 데이터 없음")
+        dart_s = fmt_dart_summary(s.get("dart", {}))
 
         top5 += (
             f"\n{medal[i]} <b>{s['name']}</b> [{mk}]  <b>{s['total_score']}점</b>\n"
             f"   {price:,}원  {'+' if change>=0 else ''}{change:.2f}%"
             f"  시총 {fmt_won(s.get('mktcap',0)*1e8)}\n"
-            f"   수급{s.get('supply_score',0)} + 펀더{s.get('fundamental_score',0)} + 컨센{s.get('consensus_score',0)}\n"
+            f"   수급{s.get('supply_score',0)} + 펀더{s.get('fundamental_score',0)}\n"
             f"   📡 {sup_r}\n"
             f"   📊 {fun_r}\n"
-            f"   🏦 {con_r}\n"
-            f"   🎯 목표주가 {avg_tp:,}원  상승여력 {upside:+.1f}%\n"
+            f"{dart_s}\n"
         )
 
     agent_typing(2.5)
@@ -849,13 +796,13 @@ def run_agent_discussion():
         f"외국인: {fmt_won(f_net)}  기관: {fmt_won(i_net)}\n\n"
         f"━━ 에이전트 협의 결과 ━━\n"
         f"📡 수집: {success}개 완료\n"
-        f"🔬 수급: 상위 20개 선별 (골든 {len(golden)}개)\n"
-        f"📊 펀더: DART 실적 검증 (상위 10개)\n"
-        f"🏦 컨센: 증권사 의견 {success_cons}개 수집\n"
+        f"🔬 수급: 시총1조↑ {len(filtered)}개 분석 (골든 {len(golden)}개)\n"
+        f"📊 펀더: DART 실적 검증 (상위 15개)\n"
         f"⭐ 추천: TOP5 도출\n\n"
         f"🏆 <b>오늘의 TOP3</b>\n{top3}\n\n"
         f"⚠️ <i>투자 참고용 · 본인 판단으로 결정하세요</i>\n"
-        f"🔗 https://bjkim-pixel.github.io/market-radar/",
+        f"🔗 https://bjkim-pixel.github.io/market-radar/\n\n"
+        f"병주, 화선님 오늘도 행복한 하루 보내세요~ 😊",
         delay=1
     )
 
@@ -871,7 +818,7 @@ def main():
         print("[ERROR] TELEGRAM_TOKEN 없음"); return
     if not KIS_APP_KEY:
         print("[ERROR] KIS_APP_KEY 없음"); return
-    print("[recommend_bot] 멀티 에이전트 추천 시스템 v2 시작")
+    print("[recommend_bot] 멀티 에이전트 추천 시스템 v3 시작")
     run_agent_discussion()
 
 
