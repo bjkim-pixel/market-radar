@@ -37,17 +37,3 @@ jobs:
           git diff --staged --quiet || git commit -m "bot: update offset"
           git pull --rebase origin main
           git push
-```
-
----
-
-## 추가 후 전체 구조
-```
-Fetch Market Data       → 15:50, 20:10 자동
-                           + 텔레그램 시장 알림
-
-Stock Bot               → 5분마다 자동
-                           + 단체방 종목 질문 응답
-
-recommend.yml           → 16:00 자동
-                           + 에이전트 추천 분석
