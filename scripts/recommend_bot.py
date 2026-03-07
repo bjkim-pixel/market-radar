@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-멀티 에이전트 주식 추천 시스템 v3
+멀티 에이전트 주식 추천 시스템 v4
 변경사항:
-- 합병/상장폐지 7개 종목 제거
-- 수급 분석: 시총 1조 미만 필터링 + 5조↑ 참고 TOP10 추가
-- 펀더멘털: 25년 연간 + 26년 분기 실적 표시
-- 컨센서스 에이전트 제거 (수집 실패로 삭제)
-- 추천 스코어: 수급 + 펀더 2개 기준으로 변경
-- 마지막 메시지에 인사말 추가
+- 수급 분석: 시총 5조↑만 대상 (20개 선별)
+- PER/PBR: KIS API 실제 연동 데이터 (샘플 아님)
+- DART: corp_code 조회 방식 개선 (실패 시 상세 로그)
+- 추천 에이전트: TOP10 표시
+- 오케스트레이터 최종: TOP5 요약
+- 마지막 인사말 유지
 """
 
 import os, time, requests, re
@@ -24,6 +24,8 @@ DART_BASE     = "https://opendart.fss.or.kr/api"
 TG_BASE       = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
 GROUP_CHAT_ID = "-5233725507"
 
+MKTCAP_5T = 50000   # 5조 (억원 단위)
+
 # ── 에이전트 페르소나 ─────────────────────────────────
 AGENTS = {
     "orchestrator": {"name": "🎯 오케스트레이터", "desc": "분석 총괄 · 에이전트 조율"},
@@ -33,9 +35,7 @@ AGENTS = {
     "recommender":  {"name": "⭐ 추천 에이전트",   "desc": "종합 스코어링 및 최종 추천"},
 }
 
-# ── 종목 목록 (합병/상장폐지 7개 제거) ───────────────
-# 제거: 현대미포조선(010620), 메리츠화재(000060), HD현대인프라코어(042670),
-#       쌍용C&E(003410), 메리츠증권(008560), 셀트리온헬스케어(091990), 비올(335890)
+# ── 종목 목록 (합병/상장폐지 제거 후) ────────────────
 MAJOR_STOCKS = [
     ("005930","삼성전자","KOSPI"),
     ("000660","SK하이닉스","KOSPI"),
@@ -175,9 +175,6 @@ MAJOR_STOCKS = [
     ("336570","원텍","KOSDAQ"),
 ]
 
-MKTCAP_1T  = 10000   # 1조 (억원 단위)
-MKTCAP_5T  = 50000   # 5조
-
 
 # ═══════════════════════════════════════
 # 유틸
@@ -232,6 +229,8 @@ def agent_typing(delay=1.5):
 
 # ═══════════════════════════════════════
 # KIS API
+# PER/PBR은 KIS API FHKST01010100에서 실시간 제공
+# 샘플 데이터가 아닌 실제 연동 데이터
 # ═══════════════════════════════════════
 
 def get_kis_token():
@@ -259,7 +258,11 @@ def kis_get(path, params, tr_id, token):
     return {}
 
 def fetch_stock_data(code, token):
-    result = {"code": code}
+    """
+    KIS TR FHKST01010100: 현재가, 등락, 시총, PER, PBR
+    KIS TR FHKST01010900: 외인·기관 10일 수급
+    PER/PBR → KIS 실제 연동 (샘플 아님)
+    """
     d = kis_get("/uapi/domestic-stock/v1/quotations/inquire-price",
                 {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": code},
                 "FHKST01010100", token)
@@ -269,18 +272,20 @@ def fetch_stock_data(code, token):
     high52 = si(o.get("d250_hgpr", 0))
     mktcap = sf(o.get("hts_avls", 0))
     if not price: return None
-    result.update({
+
+    result = {
+        "code":     code,
         "price":    price,
         "change":   sf(o.get("prdy_ctrt", 0)),
         "high52":   high52,
         "low52":    si(o.get("d250_lwpr", 0)),
-        "per":      sf(o.get("per", 0)),
-        "pbr":      sf(o.get("pbr", 0)),
-        "mktcap":   mktcap,
+        "per":      sf(o.get("per", 0)),   # KIS 실시간 PER
+        "pbr":      sf(o.get("pbr", 0)),   # KIS 실시간 PBR
+        "mktcap":   mktcap,                # 단위: 억원
         "sector":   o.get("bstp_kor_isnm", "").strip(),
         "nh_ratio": round(price / high52 * 100, 1) if high52 else 0,
         "volume":   si(o.get("acml_vol", 0)),
-    })
+    }
     time.sleep(0.07)
 
     d2   = kis_get("/uapi/domestic-stock/v1/quotations/inquire-investor",
@@ -313,84 +318,141 @@ def fetch_stock_data(code, token):
 
 
 # ═══════════════════════════════════════
-# DART (25년 연간 + 26년 분기)
+# DART (금융감독원 전자공시)
+# DART_API_KEY Secret 필요
+# 출처: https://opendart.fss.or.kr
 # ═══════════════════════════════════════
 
 def get_corp_code(stock_code):
+    """종목코드 → DART 고유번호(corp_code) 변환"""
+    if not DART_API_KEY:
+        return ""
     try:
-        r = requests.get(f"{DART_BASE}/company.json",
-                         params={"crtfc_key": DART_API_KEY, "stock_code": stock_code},
-                         timeout=10)
+        r = requests.get(
+            f"{DART_BASE}/company.json",
+            params={"crtfc_key": DART_API_KEY, "stock_code": stock_code},
+            timeout=10,
+        )
         d = r.json()
-        if d.get("status") == "000": return d.get("corp_code", "")
-    except: pass
+        print(f"  [DART corp] {stock_code} status={d.get('status')} corp={d.get('corp_code','')}")
+        if d.get("status") == "000":
+            return d.get("corp_code", "")
+    except Exception as e:
+        print(f"  [DART corp 오류] {stock_code}: {e}")
     return ""
 
-def parse_financial_items(item_list):
-    """재무제표 항목 리스트에서 매출/영업이익/순이익 추출"""
+def parse_fin_items(item_list):
+    """재무 항목 리스트에서 매출/영업이익/순이익 추출"""
     result = {}
     for item in item_list:
         acnt = item.get("account_nm", "")
-        val  = item.get("thstrm_amount", "").replace(",", "")
-        if "매출액" in acnt and "영업" not in acnt and not result.get("rev"):
-            try: result["rev"] = int(val)
-            except: pass
-        if "영업이익" in acnt and "손실" not in acnt and not result.get("op"):
-            try: result["op"] = int(val)
-            except: pass
-        if "당기순이익" in acnt and not result.get("net"):
-            try: result["net"] = int(val)
-            except: pass
+        val  = item.get("thstrm_amount", "").replace(",", "").strip()
+        if not val: continue
+        try:
+            v = int(val)
+        except:
+            continue
+        if "매출액" in acnt and "영업" not in acnt and "rev" not in result:
+            result["rev"] = v
+        if "영업이익" in acnt and "손실" not in acnt and "op" not in result:
+            result["op"] = v
+        if "당기순이익" in acnt and "net" not in result:
+            result["net"] = v
     if result.get("rev") and result.get("op"):
         result["op_margin"] = round(result["op"] / result["rev"] * 100, 1)
     return result
 
+def fetch_annual(corp_code, year):
+    """연간 재무제표 (사업보고서 11011)"""
+    try:
+        r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
+            "crtfc_key":  DART_API_KEY,
+            "corp_code":  corp_code,
+            "bsns_year":  str(year),
+            "reprt_code": "11011",   # 사업보고서
+            "fs_div":     "CFS",     # 연결재무제표
+        }, timeout=15)
+        d = r.json()
+        status = d.get("status")
+        print(f"  [DART annual] {corp_code} {year} status={status} items={len(d.get('list',[]))}")
+        if status == "000":
+            return parse_fin_items(d.get("list", []))
+    except Exception as e:
+        print(f"  [DART annual 오류] {corp_code} {year}: {e}")
+    return {}
+
+def fetch_quarter(corp_code, year):
+    """
+    분기보고서: Q1(11013) → Q3(11014) → Q2(11012) 순으로 최신 시도
+    2026년 기준으로 가장 최근 발표된 분기 데이터 반환
+    """
+    quarter_map = [("11013", "Q1"), ("11014", "Q3"), ("11012", "Q2")]
+    for reprt_code, label in quarter_map:
+        try:
+            r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
+                "crtfc_key":  DART_API_KEY,
+                "corp_code":  corp_code,
+                "bsns_year":  str(year),
+                "reprt_code": reprt_code,
+                "fs_div":     "CFS",
+            }, timeout=15)
+            d = r.json()
+            status = d.get("status")
+            print(f"  [DART quarter] {corp_code} {year} {label} status={status}")
+            if status == "000" and d.get("list"):
+                parsed = parse_fin_items(d.get("list", []))
+                if parsed:
+                    parsed["label"] = f"{str(year)[2:]}년 {label}"
+                    return parsed
+        except Exception as e:
+            print(f"  [DART quarter 오류] {corp_code} {year} {label}: {e}")
+        time.sleep(0.15)
+    return {}
+
 def fetch_dart_full(corp_code):
-    """
-    25년 연간 실적 + 26년 발표된 최근 분기 실적
-    반환: {
-        "annual_2025": {rev, op, net, op_margin},
-        "annual_2024": {rev, op, net, op_margin},
-        "quarter_2026": {"label": "26년 Q1", rev, op, op_margin}  # 있으면
-    }
-    """
-    data     = {}
+    """25년 연간 + 24년 연간 + 26년 최신 분기"""
     kst_year = (datetime.utcnow() + timedelta(hours=9)).year  # 2026
-
-    # 연간: 25년, 24년
-    for year in [kst_year - 1, kst_year - 2]:
-        try:
-            r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
-                "crtfc_key": DART_API_KEY, "corp_code": corp_code,
-                "bsns_year": str(year), "reprt_code": "11011", "fs_div": "CFS",
-            }, timeout=15)
-            d = r.json()
-            if d.get("status") == "000":
-                parsed = parse_financial_items(d.get("list", []))
-                if parsed:
-                    data[f"annual_{year}"] = parsed
-        except: pass
-        time.sleep(0.2)
-
-    # 26년 분기: Q1(11013) → Q2(11012) → Q3(11014) 순서로 있는 것 가져오기
-    quarter_map = {"11013": "Q1", "11012": "Q2", "11014": "Q3"}
-    for reprt_code, label in quarter_map.items():
-        try:
-            r = requests.get(f"{DART_BASE}/fnlttSinglAcnt.json", params={
-                "crtfc_key": DART_API_KEY, "corp_code": corp_code,
-                "bsns_year": str(kst_year), "reprt_code": reprt_code, "fs_div": "CFS",
-            }, timeout=15)
-            d = r.json()
-            if d.get("status") == "000":
-                parsed = parse_financial_items(d.get("list", []))
-                if parsed:
-                    parsed["label"] = f"{str(kst_year)[2:]}년 {label}"
-                    data["quarter_latest"] = parsed
-                    break  # 가장 최근 분기 하나만
-        except: pass
-        time.sleep(0.2)
-
+    data = {}
+    # 25년 연간
+    a25 = fetch_annual(corp_code, kst_year - 1)
+    if a25: data["annual_2025"] = a25
+    time.sleep(0.2)
+    # 24년 연간
+    a24 = fetch_annual(corp_code, kst_year - 2)
+    if a24: data["annual_2024"] = a24
+    time.sleep(0.2)
+    # 26년 최신 분기
+    q = fetch_quarter(corp_code, kst_year)
+    if q: data["quarter_latest"] = q
     return data
+
+def fmt_dart_lines(dart):
+    """DART 실적 3줄 포맷 (25년 연간 + 24년 연간 + 26년 분기)"""
+    lines = []
+    a25 = dart.get("annual_2025", {})
+    a24 = dart.get("annual_2024", {})
+    q   = dart.get("quarter_latest", {})
+
+    if a25:
+        g = ""
+        if a24 and a24.get("op") and a25.get("op"):
+            gr = (a25["op"] - a24["op"]) / abs(a24["op"]) * 100
+            g  = f" 전년比{gr:+.0f}%"
+        lines.append(
+            f"  25년  매출 {fmt_won(a25.get('rev',0))}  "
+            f"영업익 {fmt_won(a25.get('op',0))} ({a25.get('op_margin',0):.1f}%){g}"
+        )
+    if a24:
+        lines.append(
+            f"  24년  매출 {fmt_won(a24.get('rev',0))}  "
+            f"영업익 {fmt_won(a24.get('op',0))} ({a24.get('op_margin',0):.1f}%)"
+        )
+    if q:
+        lines.append(
+            f"  {q.get('label','26년분기')}  매출 {fmt_won(q.get('rev',0))}  "
+            f"영업익 {fmt_won(q.get('op',0))} ({q.get('op_margin',0):.1f}%)"
+        )
+    return "\n".join(lines) if lines else "  ※ DART 실적 미수집"
 
 
 # ═══════════════════════════════════════
@@ -398,15 +460,6 @@ def fetch_dart_full(corp_code):
 # ═══════════════════════════════════════
 
 def calc_supply_score(s):
-    """
-    수급 점수 (0~42점)
-    외인 연속 순매수  최대 15점  (7일↑★★★ / 5일12 / 3일8 / 2일4)
-    기관 연속 순매수  최대 10점  (5일↑★★ / 3일7 / 2일3)
-    매직지수          최대 10점  (≥0.05%★★★ / ≥0.02%7 / ≥0.01%4)
-    5일 외인+기관 동반매수   5점
-    신고가 근접/돌파          5점
-    시총 보너스 (대형주)     최대 2점
-    """
     score, reasons = 0, []
     f_consec = s.get("f_consec", 0)
     i_consec = s.get("i_consec", 0)
@@ -446,26 +499,18 @@ def calc_supply_score(s):
 
 
 def calc_fundamental_score(s, dart):
-    """
-    펀더멘털 점수 (0~30점)
-    PER  ≤8배 10점 / ≤15배 7점 / ≤25배 4점 / >40배 -3점
-    PBR  ≤0.7배 7점 / ≤1.5배 4점
-    영업익 성장률  흑전/+100%↑ 10점 / +30%↑ 7점 / +10%↑ 4점
-    출처: KIS(PER/PBR) + DART(영업이익)
-    """
     score, reasons = 0, []
     per = s.get("per", 0)
     pbr = s.get("pbr", 0)
 
-    if 0 < per <= 8:      score += 10; reasons.append(f"PER {per:.1f}배 저평가 ★★★")
-    elif 8 < per <= 15:   score += 7;  reasons.append(f"PER {per:.1f}배 적정")
-    elif 15 < per <= 25:  score += 4;  reasons.append(f"PER {per:.1f}배")
-    elif per > 40:        score -= 3;  reasons.append(f"PER {per:.1f}배 고평가 ⚠️")
+    if 0 < per <= 8:       score += 10; reasons.append(f"PER {per:.1f}배 저평가 ★★★")
+    elif 8 < per <= 15:    score += 7;  reasons.append(f"PER {per:.1f}배 적정")
+    elif 15 < per <= 25:   score += 4;  reasons.append(f"PER {per:.1f}배")
+    elif per > 40:         score -= 3;  reasons.append(f"PER {per:.1f}배 고평가 ⚠️")
 
-    if 0 < pbr <= 0.7:    score += 7;  reasons.append(f"PBR {pbr:.2f}배 자산저평가 ★★")
-    elif 0.7 < pbr <= 1.5:score += 4;  reasons.append(f"PBR {pbr:.2f}배 적정")
+    if 0 < pbr <= 0.7:     score += 7;  reasons.append(f"PBR {pbr:.2f}배 자산저평가 ★★")
+    elif 0.7 < pbr <= 1.5: score += 4;  reasons.append(f"PBR {pbr:.2f}배 적정")
 
-    # 25년 vs 24년 영업이익 성장률
     a25 = dart.get("annual_2025", {})
     a24 = dart.get("annual_2024", {})
     if a25 and a24:
@@ -485,42 +530,6 @@ def calc_fundamental_score(s, dart):
     return min(max(score, 0), 30), reasons
 
 
-def fmt_dart_summary(dart):
-    """
-    DART 실적 요약 문자열 생성
-    25년 연간 + 26년 최근 분기
-    """
-    lines = []
-    a25 = dart.get("annual_2025", {})
-    a24 = dart.get("annual_2024", {})
-    q   = dart.get("quarter_latest", {})
-
-    if a25:
-        rev = fmt_won(a25.get("rev", 0))
-        op  = fmt_won(a25.get("op",  0))
-        opm = a25.get("op_margin", 0)
-        g_str = ""
-        if a24 and a24.get("op") and a25.get("op"):
-            g = (a25["op"] - a24["op"]) / abs(a24["op"]) * 100
-            g_str = f"  전년比 {g:+.0f}%"
-        lines.append(f"  📋 <b>25년 연간</b>  매출 {rev}  영업익 {op} ({opm}%){g_str}")
-
-    if a24:
-        rev = fmt_won(a24.get("rev", 0))
-        op  = fmt_won(a24.get("op",  0))
-        opm = a24.get("op_margin", 0)
-        lines.append(f"  📋 <b>24년 연간</b>  매출 {rev}  영업익 {op} ({opm}%)")
-
-    if q:
-        label = q.get("label", "26년 분기")
-        rev   = fmt_won(q.get("rev", 0))
-        op    = fmt_won(q.get("op",  0))
-        opm   = q.get("op_margin", 0)
-        lines.append(f"  📋 <b>{label}</b>  매출 {rev}  영업익 {op} ({opm}%)")
-
-    return "\n".join(lines) if lines else "  DART 실적 미수집"
-
-
 # ═══════════════════════════════════════
 # 메인 협의 프로세스
 # ═══════════════════════════════════════
@@ -534,11 +543,11 @@ def run_agent_discussion():
     agent_say("orchestrator",
         f"📅 <b>{now_str} KST  |  장 마감</b>\n\n"
         f"오늘 분석 시작합니다.\n"
-        f"대상: <b>{total}개</b> (KOSPI+KOSDAQ, 시총 1조↑)\n\n"
-        f"┌ 1️⃣ 수집  → KIS API 현재가+수급 (전 종목)\n"
-        f"├ 2️⃣ 수급  → 연속매수·매직지수 (시총 1조↑ 필터)\n"
-        f"├ 3️⃣ 펀더  → DART 25년 연간 + 26년 분기 (상위 15개)\n"
-        f"└ 4️⃣ 추천  → 수급+펀더 종합 스코어링 TOP5\n\n"
+        f"수집 대상: <b>{total}개</b> (KOSPI+KOSDAQ)\n\n"
+        f"┌ 1️⃣ 수집  → KIS API 전종목 현재가+수급\n"
+        f"├ 2️⃣ 수급  → 시총 5조↑ 필터 → 수급 상위 20개\n"
+        f"├ 3️⃣ 펀더  → DART 25년·26년 실적 (상위 20개)\n"
+        f"└ 4️⃣ 추천  → 수급+펀더 스코어링 TOP10\n\n"
         f"<b>배점:</b> 수급 42 + 펀더 30 = 72점 만점\n\n"
         f"📡 수집 에이전트, 시작!",
         delay=2
@@ -549,8 +558,9 @@ def run_agent_discussion():
     agent_say("collector",
         f"지시 수신 ✅\n\n"
         f"<b>데이터 출처:</b> 한국투자증권 KIS Open API\n"
-        f"  현재가/PER/PBR: TR FHKST01010100\n"
-        f"  외인·기관 수급: TR FHKST01010900\n\n"
+        f"  현재가·시총·PER·PBR  → TR FHKST01010100\n"
+        f"  외인·기관 10일 수급  → TR FHKST01010900\n"
+        f"<b>※ PER/PBR은 KIS 실시간 연동 (샘플 아님)</b>\n\n"
         f"<b>{total}개 종목</b> 수집 시작 ⏳",
         delay=1
     )
@@ -583,17 +593,15 @@ def run_agent_discussion():
 
     fail_msg = ""
     if failed:
-        fail_msg = (f"\n\n⚠️ <b>수집 실패 {len(failed)}개</b>\n"
-                    + ", ".join(failed[:10]))
+        fail_msg = f"\n\n⚠️ 수집 실패 {len(failed)}개: " + ", ".join(failed[:8])
 
     agent_typing(1.5)
     agent_say("collector",
         f"✅ <b>수집 완료!</b>\n\n"
-        f"• 성공: <b>{success}개</b>  (KOSPI {k_cnt} / KOSDAQ {q_cnt})\n"
-        f"• 상승 {up_cnt}개  /  하락 {dn_cnt}개\n"
-        f"• 평균 등락: {avg_chg:+.2f}%\n"
-        f"• 외국인 합산: {fmt_won(f_total)}\n"
-        f"• 기관 합산: {fmt_won(i_total)}"
+        f"성공 <b>{success}개</b>  (KOSPI {k_cnt} / KOSDAQ {q_cnt})\n"
+        f"상승 {up_cnt}개  /  하락 {dn_cnt}개  |  평균 {avg_chg:+.2f}%\n"
+        f"외국인 합산: {fmt_won(f_total)}\n"
+        f"기관 합산: {fmt_won(i_total)}"
         f"{fail_msg}\n\n"
         f"🔬 수급 에이전트, 넘깁니다!",
         delay=2
@@ -603,7 +611,7 @@ def run_agent_discussion():
     agent_typing(2)
     agent_say("supply",
         f"<b>{success}개 종목</b> 수신 ✅\n\n"
-        f"<b>필터:</b> 시총 1조 미만 제외\n\n"
+        f"<b>필터:</b> 시총 5조↑만 분석 대상\n\n"
         f"<b>배점 기준 (42점 만점):</b>\n"
         f"  외인 연속 순매수  최대 15점\n"
         f"  기관 연속 순매수  최대 10점\n"
@@ -622,42 +630,24 @@ def run_agent_discussion():
         s["supply_score"]   = sc
         s["supply_reasons"] = rs
 
-    # 시총 1조 이상만 필터링
-    filtered = [s for s in all_stocks if s.get("mktcap", 0) >= MKTCAP_1T]
-    filtered_out = success - len(filtered)
-
+    # 시총 5조↑ 필터
+    filtered  = [s for s in all_stocks if s.get("mktcap", 0) >= MKTCAP_5T]
+    excluded  = success - len(filtered)
     supply_top = sorted(filtered, key=lambda x: x["supply_score"], reverse=True)[:20]
 
-    # 골든수급: 외인 5일↑ AND 기관 5일↑
     golden = [s for s in filtered
               if s.get("f_consec", 0) >= 5 and s.get("i_consec", 0) >= 5]
-    # 이탈경고: 외인+기관 모두 0일 AND 매직 음수
     warn   = [s for s in filtered
               if s.get("f_consec", 0) == 0 and s.get("i_consec", 0) == 0
               and s.get("magic", 0) < 0]
 
-    # 시총 5조↑ 참고 TOP10
-    large_top = sorted(
-        [s for s in filtered if s.get("mktcap", 0) >= MKTCAP_5T],
-        key=lambda x: x["supply_score"], reverse=True
-    )[:10]
-
     top_lines = "\n".join(
-        f"  {i+1}. <b>{s['name']}</b>[{'Q' if s['mkt']=='KOSDAQ' else 'K'}]"
-        f"  시총{fmt_won(s.get('mktcap',0)*1e8)}"
+        f"  {i+1:2}. <b>{s['name']}</b>[{'Q' if s['mkt']=='KOSDAQ' else 'K'}]"
+        f"  {fmt_won(s.get('mktcap',0)*1e8)}"
         f"  외인{s.get('f_consec',0)}일 기관{s.get('i_consec',0)}일"
         f"  매직{s.get('magic',0):+.4f}%"
         f"  <b>{s['supply_score']}점</b>"
-        for i, s in enumerate(supply_top[:10])
-    )
-
-    large_lines = "\n".join(
-        f"  {i+1}. <b>{s['name']}</b>"
-        f"  시총{fmt_won(s.get('mktcap',0)*1e8)}"
-        f"  외인{s.get('f_consec',0)}일 기관{s.get('i_consec',0)}일"
-        f"  매직{s.get('magic',0):+.4f}%"
-        f"  {s['supply_score']}점"
-        for i, s in enumerate(large_top)
+        for i, s in enumerate(supply_top[:20])
     )
 
     golden_list = ", ".join(s["name"] for s in golden[:10]) + (f" 외 {len(golden)-10}개" if len(golden) > 10 else "")
@@ -666,12 +656,11 @@ def run_agent_discussion():
     agent_typing(2)
     agent_say("supply",
         f"✅ <b>수급 분석 완료!</b>\n\n"
-        f"<i>시총 1조 미만 {filtered_out}개 제외 → {len(filtered)}개 분석</i>\n\n"
-        f"📊 <b>수급 상위 10종목 (전체):</b>\n{top_lines}\n\n"
-        f"🏢 <b>시총 5조↑ 수급 TOP10 (참고):</b>\n{large_lines}\n\n"
+        f"<i>시총 5조↑ {len(filtered)}개 분석 ({excluded}개 제외)</i>\n\n"
+        f"📊 <b>수급 상위 20종목:</b>\n{top_lines}\n\n"
         f"⭐ <b>골든수급</b> {len(golden)}개  (외인+기관 동시 5일↑)\n"
         f"  {golden_list if golden_list else '해당 없음'}\n\n"
-        f"⚠️ <b>수급 이탈 경고</b> {len(warn)}개  (외인+기관 동시 0일+매직음수)\n"
+        f"⚠️ <b>수급 이탈 경고</b> {len(warn)}개\n"
         f"  {warn_list if warn_list else '해당 없음'}\n\n"
         f"📊 펀더멘털 에이전트, 상위 20개 넘깁니다!",
         delay=2
@@ -679,114 +668,118 @@ def run_agent_discussion():
 
     # ━━━ 펀더멘털 에이전트 ━━━
     agent_typing(2)
+    dart_available = "✅ DART_API_KEY 확인" if DART_API_KEY else "⚠️ DART_API_KEY 없음 (PER/PBR만 사용)"
     agent_say("fundamental",
         f"상위 20개 종목 수신 ✅\n\n"
         f"<b>데이터 출처:</b>\n"
-        f"  PER/PBR → KIS API (실시간)\n"
-        f"  실적 → DART 금융감독원 전자공시 (연결재무제표)\n\n"
-        f"<b>수집 범위:</b>\n"
+        f"  PER/PBR   → KIS API 실시간 (TR FHKST01010100)\n"
+        f"  재무실적  → DART 금융감독원 전자공시\n"
+        f"  {dart_available}\n\n"
+        f"<b>수집 실적:</b>\n"
         f"  25년 연간 매출·영업이익·영업이익률\n"
-        f"  24년 연간 (전년 비교용)\n"
-        f"  26년 최근 발표 분기 (있으면)\n\n"
+        f"  24년 연간 (전년 비교)\n"
+        f"  26년 최신 분기 (발표된 경우)\n\n"
         f"<b>배점 기준 (30점 만점):</b>\n"
         f"  PER ≤8배 10점 / ≤15배 7점 / ≤25배 4점\n"
         f"  PBR ≤0.7배 7점 / ≤1.5배 4점\n"
         f"  영업익 성장 흑전/+100%↑ 10점 / +30%↑ 7점\n\n"
-        f"⏳ DART 수집 중 (상위 15개)...",
+        f"⏳ 수집 중...",
         delay=1.5
     )
 
-    # DART 상위 15개 수집
-    for s in supply_top[:15]:
-        corp = get_corp_code(s["code"])
-        s["dart"] = fetch_dart_full(corp) if corp else {}
+    dart_success = 0
+    for s in supply_top:
+        corp = get_corp_code(s["code"]) if DART_API_KEY else ""
+        if corp:
+            s["dart"] = fetch_dart_full(corp)
+            if s["dart"]: dart_success += 1
+        else:
+            s["dart"] = {}
         sc, rs = calc_fundamental_score(s, s["dart"])
-        s["fundamental_score"]   = sc
-        s["fundamental_reasons"] = rs
-
-    for s in supply_top[15:]:
-        s["dart"] = {}
-        sc, rs = calc_fundamental_score(s, {})
         s["fundamental_score"]   = sc
         s["fundamental_reasons"] = rs
 
     fund_top = sorted(supply_top, key=lambda x: x["fundamental_score"], reverse=True)
 
     fund_lines = ""
-    for i, s in enumerate(fund_top[:8]):
-        mk = "Q" if s["mkt"] == "KOSDAQ" else "K"
-        dart_summary = fmt_dart_summary(s.get("dart", {}))
+    for i, s in enumerate(fund_top[:10]):
+        mk         = "Q" if s["mkt"] == "KOSDAQ" else "K"
+        dart_lines = fmt_dart_lines(s.get("dart", {}))
         fund_lines += (
             f"\n  {i+1}. <b>{s['name']}</b>[{mk}]  "
             f"PER {s.get('per',0):.1f}배  PBR {s.get('pbr',0):.2f}배  "
             f"<b>{s['fundamental_score']}점</b>\n"
-            f"{dart_summary}\n"
+            f"{dart_lines}\n"
         )
+
+    dart_status = f"DART 실적 {dart_success}/{len(supply_top)}개 수집" if DART_API_KEY else "DART_API_KEY 없음 → PER/PBR만 반영"
 
     agent_typing(2)
     agent_say("fundamental",
-        f"✅ <b>펀더멘털 분석 완료!</b>\n\n"
-        f"📊 <b>펀더멘털 상위 8종목:</b>\n{fund_lines}\n"
+        f"✅ <b>펀더멘털 분석 완료!</b>  ({dart_status})\n"
+        f"{fund_lines}\n"
         f"⭐ 추천 에이전트, 최종 판단 부탁드립니다!",
         delay=2
     )
 
-    # ━━━ 추천 에이전트 ━━━
+    # ━━━ 추천 에이전트 (TOP10) ━━━
     agent_typing(2)
     agent_say("recommender",
-        f"수급·펀더멘털 에이전트 데이터 수신 ✅\n\n"
+        f"수급·펀더멘털 데이터 수신 ✅\n\n"
         f"<b>종합 스코어링 (72점 만점):</b>\n"
-        f"  수급      42점  (외인·기관 연속·매직·시총)\n"
-        f"  펀더멘털  30점  (PER·PBR·영업익 성장)\n\n"
+        f"  수급      42점\n"
+        f"  펀더멘털  30점\n\n"
         f"⏳ 스코어링 중...",
         delay=2
     )
 
     for s in supply_top:
-        s["total_score"] = (
-            s.get("supply_score",      0) +
-            s.get("fundamental_score", 0)
-        )
+        s["total_score"] = s.get("supply_score", 0) + s.get("fundamental_score", 0)
 
     final = sorted(supply_top, key=lambda x: x["total_score"], reverse=True)
 
-    medal = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-    top5  = ""
-    for i, s in enumerate(final[:5]):
+    medal = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    top10 = ""
+    for i, s in enumerate(final[:10]):
         mk     = "KOSDAQ" if s["mkt"] == "KOSDAQ" else "KOSPI"
         price  = s.get("price", 0)
         change = s.get("change", 0)
         sup_r  = first_reason(s.get("supply_reasons",      []), "수급 데이터 없음")
         fun_r  = first_reason(s.get("fundamental_reasons", []), "펀더 데이터 없음")
-        dart_s = fmt_dart_summary(s.get("dart", {}))
+        dart_l = fmt_dart_lines(s.get("dart", {}))
 
-        top5 += (
+        top10 += (
             f"\n{medal[i]} <b>{s['name']}</b> [{mk}]  <b>{s['total_score']}점</b>\n"
             f"   {price:,}원  {'+' if change>=0 else ''}{change:.2f}%"
             f"  시총 {fmt_won(s.get('mktcap',0)*1e8)}\n"
-            f"   수급{s.get('supply_score',0)} + 펀더{s.get('fundamental_score',0)}\n"
+            f"   수급{s.get('supply_score',0)}점 + 펀더{s.get('fundamental_score',0)}점\n"
             f"   📡 {sup_r}\n"
             f"   📊 {fun_r}\n"
-            f"{dart_s}\n"
+            f"{dart_l}\n"
         )
 
     agent_typing(2.5)
     agent_say("recommender",
         f"✅ <b>종합 스코어링 완료!</b>\n\n"
-        f"━━━━ 오늘의 추천 TOP5 ━━━━"
-        f"{top5}\n"
+        f"━━━━ 오늘의 추천 TOP10 ━━━━"
+        f"{top10}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"🎯 오케스트레이터, 분석 완료 보고드립니다!",
         delay=2
     )
 
-    # ━━━ 오케스트레이터 마무리 ━━━
+    # ━━━ 오케스트레이터: TOP5 최종 요약 ━━━
     up_cnt  = sum(1 for s in all_stocks if s.get("change", 0) >= 0)
     dn_cnt  = len(all_stocks) - up_cnt
     avg_chg = sum(s.get("change", 0) for s in all_stocks) / len(all_stocks) if all_stocks else 0
     f_net   = sum(s.get("f_today", 0) for s in all_stocks)
     i_net   = sum(s.get("i_today", 0) for s in all_stocks)
-    top3    = " / ".join(f"{s['name']}({s['total_score']}점)" for s in final[:3])
+
+    top5_lines = "\n".join(
+        f"  {medal[i]} {s['name']} ({s['total_score']}점)  "
+        f"{s.get('price',0):,}원  {'+' if s.get('change',0)>=0 else ''}{s.get('change',0):.2f}%"
+        for i, s in enumerate(final[:5])
+    )
 
     agent_typing(2)
     agent_say("orchestrator",
@@ -795,30 +788,29 @@ def run_agent_discussion():
         f"상승 {up_cnt} / 하락 {dn_cnt}  |  평균 {avg_chg:+.2f}%\n"
         f"외국인: {fmt_won(f_net)}  기관: {fmt_won(i_net)}\n\n"
         f"━━ 에이전트 협의 결과 ━━\n"
-        f"📡 수집: {success}개 완료\n"
-        f"🔬 수급: 시총1조↑ {len(filtered)}개 분석 (골든 {len(golden)}개)\n"
-        f"📊 펀더: DART 실적 검증 (상위 15개)\n"
-        f"⭐ 추천: TOP5 도출\n\n"
-        f"🏆 <b>오늘의 TOP3</b>\n{top3}\n\n"
+        f"📡 수집: {success}개  →  시총5조↑ {len(filtered)}개 분석\n"
+        f"🔬 수급: 상위 20개 선별 (골든 {len(golden)}개)\n"
+        f"📊 펀더: DART {dart_success}개 실적 수집\n"
+        f"⭐ 추천: TOP10 도출\n\n"
+        f"━━ 🏆 오늘의 TOP5 ━━\n"
+        f"{top5_lines}\n\n"
         f"⚠️ <i>투자 참고용 · 본인 판단으로 결정하세요</i>\n"
         f"🔗 https://bjkim-pixel.github.io/market-radar/\n\n"
         f"병주, 화선님 오늘도 행복한 하루 보내세요~ 😊",
         delay=1
     )
 
-    print(f"[recommend_bot] 완료 | TOP3: {top3}")
+    print(f"[recommend_bot] 완료 | TOP5: {top5_lines[:80]}")
 
-
-# ═══════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════
 
 def main():
     if not TELEGRAM_TOKEN:
         print("[ERROR] TELEGRAM_TOKEN 없음"); return
     if not KIS_APP_KEY:
         print("[ERROR] KIS_APP_KEY 없음"); return
-    print("[recommend_bot] 멀티 에이전트 추천 시스템 v3 시작")
+    if not DART_API_KEY:
+        print("[WARN] DART_API_KEY 없음 → 실적 데이터 미수집, PER/PBR만 사용")
+    print("[recommend_bot] v4 시작")
     run_agent_discussion()
 
 
