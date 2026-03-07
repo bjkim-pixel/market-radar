@@ -1,0 +1,76 @@
+name: Multi-Agent Recommend
+
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'    # KST 16:00 (평일, 장 마감 후)
+  workflow_dispatch:
+
+jobs:
+  recommend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run multi-agent recommend
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          DART_API_KEY:   ${{ secrets.DART_API_KEY }}
+          KIS_APP_KEY:    ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python scripts/recommend_bot.py
+```
+
+---
+
+## 단체방에서 실제로 보이는 화면
+```
+🎯 오케스트레이터
+분석 총괄 · 에이전트 조율
+────────────────────────
+📅 2025-03-05 16:00 KST
+
+장 마감 후 분석을 시작합니다.
+오늘 분석 대상: 148개 종목
+1️⃣ 수집 에이전트 → KIS 데이터 수집
+2️⃣ 수급 에이전트 → 외인/기관 필터링
+...에이전트 여러분 시작해주세요 🚀
+───────────────────────────────
+📡 수집 에이전트
+KIS API 데이터 수집 담당
+────────────────────────
+KIS API 토큰 발급 중...
+148개 종목 수집을 시작합니다 ⏳
+───────────────────────────────
+📡 수집 에이전트
+────────────────────────
+✅ 데이터 수집 완료!
+- 수집 성공: 141개
+KOSPI 104개 / KOSDAQ 37개
+수급 분석 에이전트 넘깁니다 📨
+───────────────────────────────
+🔬 수급 분석 에이전트
+────────────────────────
+✅ 수급 분석 완료!
+1. 한화에어로스페이스  외인8일 기관4일  +0.0521%  38점
+2. 삼성전자  외인6일 기관3일  +0.0312%  34점
+...
+───────────────────────────────
+⭐ 추천 에이전트
+────────────────────────
+━━ 오늘의 추천 종목 TOP5 ━━
+🥇 한화에어로스페이스 85점
+   수급38 + 펀더26 + 컨센21
+   외인 8일 연속 ★★★
+   영업익 +120% ★★★
+   상승여력 +32%
+🥈 삼성전자 79점
+...
